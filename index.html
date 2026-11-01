@@ -219,7 +219,9 @@
         if (station !== currentStation) return;
 
         // Laut.fm-Station-API: offizieller Name und Senderbild stehen hier.
-        stationTitle.textContent = data.display_name || prettyStationName(station);
+        const officialName = data.display_name || prettyStationName(station);
+        stationTitle.textContent = officialName;
+        document.title = officialName + " | Webplayer";
         stationLogo = data.images && data.images.station ? data.images.station : "";
 
         // Das Stationsbild bereits anzeigen, solange noch kein Song-Cover geladen ist.
@@ -228,6 +230,7 @@
         console.warn("Stationsinformationen konnten nicht geladen werden:", error);
         if (station === currentStation) {
           stationTitle.textContent = prettyStationName(station);
+          document.title = prettyStationName(station) + " | Webplayer";
           stationLogo = "";
         }
       }
