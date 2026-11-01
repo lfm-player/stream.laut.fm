@@ -200,6 +200,32 @@
       playButton.classList.toggle("playing", playing);
     }
 
+    async function loadStationInfo(station) {
+      try {
+        const response = await fetch(
+          API_BASE + encodeURIComponent(station),
+          { cache: "no-store" }
+        );
+        if (!response.ok) {
+          throw new Error("Stationsinformationen konnten nicht geladen werden.");
+        }
+
+        const data = await response.json();
+        // laut.fm liefert den offiziellen Anzeigenamen in den Stationsdaten.
+        const apiName = data.display_name || data.displayName || data.title || data.name;
+        if (station === currentStation && apiName && apiName.toLowerCase() !== station.toLowerCase()) {
+          stationTitle.textContent = apiName;
+        } else if (station === currentStation) {
+          stationTitle.textContent = "Lade Sendernamen …";
+        }
+      } catch (error) {
+        console.warn("Offizieller Sendername konnte nicht geladen werden:", error);
+        if (station === currentStation) {
+          stationTitle.textContent = prettyStationName(station);
+        }
+      }
+    }
+
     async function loadSong() {
       if (!currentStation) return;
       if (requestController) requestController.abort();
@@ -274,7 +300,7 @@
       url.searchParams.set("station", station);
       window.history.replaceState({}, "", url.toString());
 
-      await loadSong();
+      await Promise.all([loadStationInfo(station), loadSong()]);
       if (refreshTimer) clearInterval(refreshTimer);
       refreshTimer = setInterval(loadSong, 15000);
     }
