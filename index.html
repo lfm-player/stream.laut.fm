@@ -165,6 +165,7 @@
     let currentStation = "";
     let refreshTimer = null;
     let requestController = null;
+    let stationLogo = "";
 
     function normalizeStation(value) {
       return String(value || "").trim().toLowerCase();
@@ -222,6 +223,7 @@
         console.warn("Offizieller Sendername konnte nicht geladen werden:", error);
         if (station === currentStation) {
           stationTitle.textContent = prettyStationName(station);
+          stationLogo = API_BASE + encodeURIComponent(station) + "/images/station";
         }
       }
     }
@@ -254,9 +256,8 @@
         titleText.textContent = title || "Kein aktueller Titel verfügbar.";
         songElement.appendChild(titleText);
 
-        let cover = data.artist && data.artist.image ? data.artist.image : DEFAULT_COVER;
-        if (data.live) cover = DEFAULT_COVER + "?t=_500x500";
-        setCover(cover);
+        const trackCover = data.artist && data.artist.image ? data.artist.image : "";
+        setCover(data.live || !trackCover ? (stationLogo || DEFAULT_COVER) : trackCover);
         setStatus("LIVE ON AIR", true);
         messageElement.textContent = "";
       } catch (error) {
@@ -293,7 +294,8 @@
       playerScreen.hidden = false;
       setStatus("SENDER WIRD GELADEN");
       songElement.textContent = "Lade aktuellen Titel …";
-      coverElement.textContent = "Lade Cover …";
+      coverElement.textContent = "Lade Senderlogo …";
+      stationLogo = "";
       messageElement.textContent = "";
 
       const url = new URL(window.location.href);
