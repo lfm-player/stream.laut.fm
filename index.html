@@ -146,7 +146,6 @@
     "use strict";
 
     const DEFAULT_STATION = "shout_fm";
-    const DEFAULT_COVER = "https://assets.laut.fm/213a1bef738bd2923d14f070f08cb003";
     const API_BASE = "https://api.laut.fm/station/";
 
     const entryScreen = document.getElementById("entry-screen");
@@ -186,15 +185,15 @@
 
     function setCover(url) {
       const image = document.createElement("img");
+      const requestedUrl = url || stationLogo;
       image.alt = "Cover oder Senderlogo von " + currentStation;
-      image.src = url || stationLogo;
+      image.src = requestedUrl || "";
       image.onerror = () => {
         image.onerror = null;
-        // Bei fehlendem Song-Cover auf das Logo genau dieses Senders wechseln.
-        if (stationLogo && image.src !== stationLogo) {
+        if (stationLogo && requestedUrl !== stationLogo) {
           image.src = stationLogo;
         } else {
-          coverElement.textContent = "Kein Senderlogo verfügbar";
+          coverElement.textContent = "Kein Bild verfügbar";
         }
       };
       coverElement.replaceChildren(image);
@@ -207,10 +206,6 @@
     }
 
     async function loadStationInfo(station) {
-      // Der laut.fm-Endpunkt /images/logo liefert das Logo der konkret
-      // ausgewählten Station. Kein festes shout_fm-Bild als Sender-Fallback.
-      stationLogo = API_BASE + encodeURIComponent(station) + "/images/logo";
-
       try {
         const response = await fetch(
           API_BASE + encodeURIComponent(station),
@@ -221,19 +216,21 @@
         }
 
         const data = await response.json();
-        const apiName = data.display_name || data.displayName || data.name;
-        if (station === currentStation) {
-          stationTitle.textContent = apiName || prettyStationName(station);
-        }
+        if (station !== currentStation) return;
+
+        // Laut.fm-Station-API: offizieller Name und Senderbild stehen hier.
+        stationTitle.textContent = data.display_name || prettyStationName(station);
+        stationLogo = data.images && data.images.station ? data.images.station : "";
+
+        // Das Stationsbild bereits anzeigen, solange noch kein Song-Cover geladen ist.
+        if (stationLogo) setCover(stationLogo);
       } catch (error) {
         console.warn("Stationsinformationen konnten nicht geladen werden:", error);
         if (station === currentStation) {
           stationTitle.textContent = prettyStationName(station);
+          stationLogo = "";
         }
       }
-
-      // Logo sofort laden, auch bevor der erste Songtitel eintrifft.
-      if (station === currentStation) setCover(stationLogo);
     }
 
     async function loadSong() {
@@ -264,8 +261,10 @@
         titleText.textContent = title || "Kein aktueller Titel verfügbar.";
         songElement.appendChild(titleText);
 
-        const trackCover = data.artist && data.artist.image ? data.artist.image : "";
-        setCover(data.live || !trackCover ? stationLogo : trackCover);
+        const trackCover = data.artist && (data.artist.image || data.artist.thumb)
+          ? (data.artist.image || data.artist.thumb)
+          : "";
+        setCover(data.type === "song" && trackCover ? trackCover : stationLogo);
         setStatus("LIVE ON AIR", true);
         messageElement.textContent = "";
       } catch (error) {
