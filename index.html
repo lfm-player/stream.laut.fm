@@ -300,6 +300,15 @@
       audio.src = "https://stream.laut.fm/" + encodeURIComponent(station);
       playButton.disabled = false;
 
+      // Wiedergabe direkt im Klick-Kontext starten, bevor ein API-Aufruf
+      // mit await die Browser-Aktivierung möglicherweise beendet.
+      let autoplayPromise;
+      try {
+        autoplayPromise = audio.play();
+      } catch (error) {
+        autoplayPromise = Promise.reject(error);
+      }
+
       entryScreen.hidden = true;
       playerScreen.hidden = false;
       setStatus("SENDER WIRD GELADEN");
@@ -311,6 +320,17 @@
       const url = new URL(window.location.href);
       url.searchParams.set("station", station);
       window.history.replaceState({}, "", url.toString());
+
+      if (autoplayPromise) {
+        autoplayPromise.then(() => {
+          updatePlayButton();
+          messageElement.textContent = "";
+        }).catch(() => {
+          // Browser blockieren hörbares Autoplay ohne vorherige Nutzeraktion.
+          messageElement.textContent = "Zum Starten bitte auf „Sender starten“ tippen.";
+          updatePlayButton();
+        });
+      }
 
       await Promise.all([loadStationInfo(station), loadSong()]);
       if (refreshTimer) clearInterval(refreshTimer);
