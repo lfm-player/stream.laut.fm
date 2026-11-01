@@ -227,7 +227,7 @@
 
     function updatePlayButton() {
       const playing = !audio.paused;
-      playButton.textContent = playing ? "❚❚ Wiedergabe pausieren" : "▶ " + prettyStationName(currentStation) + " starten";
+      playButton.textContent = playing ? "❚❚ Wiedergabe pausieren" : "▶ Wiedergabe starten";
       playButton.classList.toggle("playing", playing);
     }
 
