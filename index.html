@@ -232,7 +232,7 @@
         if (data.live) cover = DEFAULT_COVER + "?t=_500x500";
         setCover(cover);
         setStatus("LIVE ON AIR", true);
-        messageElement.textContent = "laut.fm/" + currentStation;
+        messageElement.textContent = "";
       } catch (error) {
         if (error.name === "AbortError") return;
         console.error("Senderdaten konnten nicht geladen werden:", error);
@@ -268,7 +268,7 @@
       setStatus("SENDER WIRD GELADEN");
       songElement.textContent = "Lade aktuellen Titel …";
       coverElement.textContent = "Lade Cover …";
-      messageElement.textContent = "Verbinde mit laut.fm/" + station + " …";
+      messageElement.textContent = "";
 
       const url = new URL(window.location.href);
       url.searchParams.set("station", station);
