@@ -1,24 +1,315 @@
-from pathlib import Path
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="description" content="Universeller Webplayer für laut.fm – gib deinen Stationsnamen ein und höre direkt los.">
+  <title>laut.fm Player</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080d18;
+      --panel: rgba(18, 26, 47, .82);
+      --line: rgba(255,255,255,.09);
+      --text: #f5f7fb;
+      --muted: #9aa8bd;
+      --accent: #4d7cfe;
+      --accent-light: #6e93ff;
+      --live: #ff3b5c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 28px 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 50% 20%, rgba(30,45,85,.42), transparent 58%),
+        linear-gradient(180deg, #0f172a 0%, var(--bg) 100%);
+    }
+    .app { width: min(100%, 440px); }
+    .player {
+      padding: 28px;
+      text-align: center;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px 22px 42px 42px;
+      box-shadow: 0 20px 55px rgba(0,0,0,.48), 0 0 40px rgba(77,124,254,.12);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .brand { margin: 0 0 5px; font-size: 2rem; font-weight: 900; letter-spacing: -.7px; }
+    .subtitle { margin: 0 0 22px; color: var(--muted); font-size: .76rem; letter-spacing: 1.6px; text-transform: uppercase; }
+    .station-form { margin-bottom: 22px; text-align: left; }
+    label { display: block; margin-bottom: 8px; font-size: .88rem; font-weight: 700; }
+    .input-row { display: flex; gap: 8px; }
+    input {
+      min-width: 0; flex: 1; padding: 13px 14px;
+      color: var(--text); background: rgba(4,9,19,.72);
+      border: 1px solid var(--line); border-radius: 12px;
+      font: inherit; outline: none;
+    }
+    input:focus { border-color: var(--accent-light); box-shadow: 0 0 0 3px rgba(77,124,254,.16); }
+    .load-button, .play-button {
+      border: 0; color: white; font: inherit; font-weight: 800; cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      box-shadow: 0 8px 24px rgba(77,124,254,.25);
+      transition: transform .18s ease, filter .18s ease;
+    }
+    .load-button { padding: 0 16px; border-radius: 12px; white-space: nowrap; }
+    .load-button:hover, .play-button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .status {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 20px; padding: 6px 13px;
+      color: var(--muted); background: rgba(255,255,255,.045);
+      border: 1px solid var(--line); border-radius: 999px;
+      font-size: .72rem; font-weight: 800; letter-spacing: 1px;
+    }
+    .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #7b8799; }
+    .status.live { color: var(--live); background: rgba(255,59,92,.09); border-color: rgba(255,59,92,.25); }
+    .status.live::before { background: var(--live); box-shadow: 0 0 0 5px rgba(255,59,92,.12); }
+    .cover {
+      width: 210px; aspect-ratio: 1; margin: 0 auto 22px; overflow: hidden;
+      display: grid; place-items: center;
+      background: rgba(0,0,0,.24); border: 1px solid var(--line);
+      border-radius: 17px; box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      color: var(--muted); font-size: .85rem;
+    }
+    .cover img { width: 100%; height: 100%; object-fit: cover; }
+    .song { min-height: 58px; margin: 0 0 22px; color: var(--muted); font-size: .92rem; line-height: 1.45; overflow-wrap: anywhere; }
+    .song strong { display: block; margin-bottom: 4px; color: white; font-size: 1.12rem; }
+    .play-button { width: 100%; padding: 15px 20px; border-radius: 999px; font-size: 1rem; }
+    .play-button.playing { background: linear-gradient(135deg, #25365f, #344b82); }
+    .message { min-height: 20px; margin: 14px 0 0; color: var(--muted); font-size: .78rem; line-height: 1.4; }
+    .share { display: inline-block; margin-top: 17px; color: #aebfff; font-size: .82rem; text-decoration: none; }
+    .share:hover { text-decoration: underline; }
+    .footnote { margin: 16px 8px 0; color: #78869d; text-align: center; font-size: .72rem; line-height: 1.5; }
 
-src = Path("/mnt/data/laut-fm-universal-player-v2.html")
-html = src.read_text(encoding="utf-8")
+    [hidden] { display: none !important; }
+    .entry-button { margin-top: 16px; }
+    .station-form input { width: 100%; display: block; }
+    .station-form label { margin-top: 2px; }
+    .status { margin-top: 0; }
+    .change-station {
+      margin-top: 16px; padding: 7px 10px; border: 0; background: transparent;
+      color: #aebfff; font: inherit; font-size: .82rem; cursor: pointer;
+    }
+    .change-station:hover { text-decoration: underline; }
 
-html = html.replace('      <button class="change-station" id="change-station" type="button">← Anderen Sender auswählen</button>\n', '')
-html = html.replace('    const changeStationButton = document.getElementById("change-station");\n', '')
-block = '''    changeStationButton.addEventListener("click", () => {
-      audio.pause();
-      audio.removeAttribute("src");
-      audio.load();
+    audio { display: none; }
+    @media (max-width: 480px) {
+      body { align-items: flex-start; padding-top: 25px; padding-bottom: 25px; }
+      .player { padding: 24px; border-radius: 20px 20px 35px 35px; }
+      .cover { width: 170px; }
+      .brand { font-size: 1.8rem; }
+      .input-row { flex-direction: column; }
+      .load-button { min-height: 46px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="player" id="entry-screen" aria-label="Sender auswählen">
+      <h1 class="brand">laut.fm PLAYER</h1>
+      <p class="subtitle">Deinen Sender starten</p>
+      <form class="station-form" id="station-form">
+        <label for="station-input">Dein laut.fm-Stationsname</label>
+        <input id="station-input" name="station" type="text" value="shout_fm"
+               placeholder="z. B. shout_fm" maxlength="80"
+               pattern="[A-Za-z0-9_-]+" autocomplete="off" spellcheck="false">
+        <button class="play-button entry-button" type="submit">Sender öffnen</button>
+      </form>
+      <p class="message" id="entry-message" role="status" aria-live="polite">Beispiel: shout_fm</p>
+    </section>
+
+    <section class="player" id="player-screen" aria-label="laut.fm Webplayer" hidden>
+      <h1 class="brand" id="station-title">Shout-FM</h1>
+      <div class="status live" id="status">LIVE ON AIR</div>
+      <div class="cover" id="cover">Lade Cover …</div>
+      <div class="song" id="song">Lade aktuellen Titel …</div>
+      <button class="play-button" id="play-button" type="button" disabled>▶ Sender starten</button>
+      <p class="message" id="message" role="status" aria-live="polite"></p>
+      <audio id="audio" preload="none" playsinline></audio>
+    </section>
+    <p class="footnote">Stream, Senderinformationen und Cover werden von laut.fm bereitgestellt.</p>
+  </main>
+  <script>
+    "use strict";
+
+    const DEFAULT_STATION = "shout_fm";
+    const DEFAULT_COVER = "https://assets.laut.fm/213a1bef738bd2923d14f070f08cb003";
+    const API_BASE = "https://api.laut.fm/station/";
+
+    const entryScreen = document.getElementById("entry-screen");
+    const playerScreen = document.getElementById("player-screen");
+    const form = document.getElementById("station-form");
+    const stationInput = document.getElementById("station-input");
+    const entryMessage = document.getElementById("entry-message");
+    const stationTitle = document.getElementById("station-title");
+    const statusBadge = document.getElementById("status");
+    const coverElement = document.getElementById("cover");
+    const songElement = document.getElementById("song");
+    const playButton = document.getElementById("play-button");
+    const messageElement = document.getElementById("message");
+    const audio = document.getElementById("audio");
+
+    let currentStation = "";
+    let refreshTimer = null;
+    let requestController = null;
+
+    function normalizeStation(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function validStation(value) {
+      return /^[a-z0-9_-]{1,80}$/.test(value);
+    }
+
+    function prettyStationName(value) {
+      return value.replace(/[_-]+/g, " ").replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    function setStatus(text, isLive = false) {
+      statusBadge.textContent = text;
+      statusBadge.classList.toggle("live", isLive);
+    }
+
+    function setCover(url) {
+      const image = document.createElement("img");
+      image.alt = "Cover von " + currentStation;
+      image.src = url || DEFAULT_COVER;
+      image.onerror = () => {
+        image.onerror = null;
+        image.src = DEFAULT_COVER;
+      };
+      coverElement.replaceChildren(image);
+    }
+
+    function updatePlayButton() {
+      const playing = !audio.paused;
+      playButton.textContent = playing ? "❚❚ Wiedergabe pausieren" : "▶ " + prettyStationName(currentStation) + " starten";
+      playButton.classList.toggle("playing", playing);
+    }
+
+    async function loadSong() {
+      if (!currentStation) return;
+      if (requestController) requestController.abort();
+      requestController = new AbortController();
+
+      try {
+        const response = await fetch(
+          API_BASE + encodeURIComponent(currentStation) + "/current_song",
+          { cache: "no-store", signal: requestController.signal }
+        );
+        if (!response.ok) {
+          throw new Error(response.status === 404 ? "Sender nicht gefunden. Bitte Stationsnamen prüfen." : "API-Fehler (" + response.status + ").");
+        }
+
+        const data = await response.json();
+        const artist = data.artist && data.artist.name ? data.artist.name : "";
+        const title = data.title || "";
+
+        songElement.replaceChildren();
+        if (artist) {
+          const strong = document.createElement("strong");
+          strong.textContent = artist;
+          songElement.appendChild(strong);
+        }
+        const titleText = document.createElement("span");
+        titleText.textContent = title || "Kein aktueller Titel verfügbar.";
+        songElement.appendChild(titleText);
+
+        let cover = data.artist && data.artist.image ? data.artist.image : DEFAULT_COVER;
+        if (data.live) cover = DEFAULT_COVER + "?t=_500x500";
+        setCover(cover);
+        setStatus("LIVE ON AIR", true);
+        messageElement.textContent = "laut.fm/" + currentStation;
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        console.error("Senderdaten konnten nicht geladen werden:", error);
+        setStatus("NICHT VERFÜGBAR");
+        songElement.textContent = error.message || "Senderdaten momentan nicht verfügbar.";
+        coverElement.textContent = "Kein Cover verfügbar";
+        messageElement.textContent = "Bitte Stationsnamen kontrollieren.";
+      }
+    }
+
+    async function openStation(rawName) {
+      const station = normalizeStation(rawName);
+      if (!validStation(station)) {
+        entryMessage.textContent = "Bitte einen gültigen laut.fm-Stationsnamen eingeben.";
+        stationInput.focus();
+        return;
+      }
+
+      if (station !== currentStation) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+      }
+
+      currentStation = station;
+      stationTitle.textContent = prettyStationName(station);
+      stationInput.value = station;
+      audio.src = "https://stream.laut.fm/" + encodeURIComponent(station);
+      playButton.disabled = false;
+
+      entryScreen.hidden = true;
+      playerScreen.hidden = false;
+      setStatus("SENDER WIRD GELADEN");
+      songElement.textContent = "Lade aktuellen Titel …";
+      coverElement.textContent = "Lade Cover …";
+      messageElement.textContent = "Verbinde mit laut.fm/" + station + " …";
+
+      const url = new URL(window.location.href);
+      url.searchParams.set("station", station);
+      window.history.replaceState({}, "", url.toString());
+
+      await loadSong();
       if (refreshTimer) clearInterval(refreshTimer);
-      currentStation = "";
-      playerScreen.hidden = true;
-      entryScreen.hidden = false;
-      stationInput.focus();
+      refreshTimer = setInterval(loadSong, 15000);
+    }
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      openStation(stationInput.value);
     });
 
-'''
-html = html.replace(block, '')
+    playButton.addEventListener("click", async () => {
+      if (!currentStation) return;
+      try {
+        if (audio.paused) await audio.play();
+        else audio.pause();
+      } catch (error) {
+        messageElement.textContent = "Wiedergabe nicht möglich. Bitte erneut versuchen.";
+      }
+      updatePlayButton();
+    });
 
-out = Path("/mnt/data/laut-fm-universal-player-v3.html")
-out.write_text(html, encoding="utf-8")
-print(f"Erstellt: {out}")
+    audio.addEventListener("play", updatePlayButton);
+    audio.addEventListener("pause", updatePlayButton);
+    audio.addEventListener("error", () => {
+      updatePlayButton();
+      messageElement.textContent = "Stream momentan nicht erreichbar. Bitte später erneut versuchen.";
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    const initialStation = params.get("station");
+    if (initialStation) {
+      stationInput.value = initialStation;
+      openStation(initialStation);
+    } else {
+      stationInput.value = DEFAULT_STATION;
+    }
+  </script>
+</body>
+</html>
