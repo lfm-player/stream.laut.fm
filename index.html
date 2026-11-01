@@ -186,11 +186,16 @@
 
     function setCover(url) {
       const image = document.createElement("img");
-      image.alt = "Cover von " + currentStation;
-      image.src = url || DEFAULT_COVER;
+      image.alt = "Cover oder Senderlogo von " + currentStation;
+      image.src = url || stationLogo;
       image.onerror = () => {
         image.onerror = null;
-        image.src = DEFAULT_COVER;
+        // Bei fehlendem Song-Cover auf das Logo genau dieses Senders wechseln.
+        if (stationLogo && image.src !== stationLogo) {
+          image.src = stationLogo;
+        } else {
+          coverElement.textContent = "Kein Senderlogo verfügbar";
+        }
       };
       coverElement.replaceChildren(image);
     }
@@ -202,6 +207,10 @@
     }
 
     async function loadStationInfo(station) {
+      // Der laut.fm-Endpunkt /images/logo liefert das Logo der konkret
+      // ausgewählten Station. Kein festes shout_fm-Bild als Sender-Fallback.
+      stationLogo = API_BASE + encodeURIComponent(station) + "/images/logo";
+
       try {
         const response = await fetch(
           API_BASE + encodeURIComponent(station),
@@ -212,20 +221,19 @@
         }
 
         const data = await response.json();
-        // laut.fm liefert den offiziellen Anzeigenamen in den Stationsdaten.
-        const apiName = data.display_name || data.displayName || data.title || data.name;
-        if (station === currentStation && apiName && apiName.toLowerCase() !== station.toLowerCase()) {
-          stationTitle.textContent = apiName;
-        } else if (station === currentStation) {
-          stationTitle.textContent = "Lade Sendernamen …";
+        const apiName = data.display_name || data.displayName || data.name;
+        if (station === currentStation) {
+          stationTitle.textContent = apiName || prettyStationName(station);
         }
       } catch (error) {
-        console.warn("Offizieller Sendername konnte nicht geladen werden:", error);
+        console.warn("Stationsinformationen konnten nicht geladen werden:", error);
         if (station === currentStation) {
           stationTitle.textContent = prettyStationName(station);
-          stationLogo = API_BASE + encodeURIComponent(station) + "/images/station";
         }
       }
+
+      // Logo sofort laden, auch bevor der erste Songtitel eintrifft.
+      if (station === currentStation) setCover(stationLogo);
     }
 
     async function loadSong() {
@@ -257,7 +265,7 @@
         songElement.appendChild(titleText);
 
         const trackCover = data.artist && data.artist.image ? data.artist.image : "";
-        setCover(data.live || !trackCover ? (stationLogo || DEFAULT_COVER) : trackCover);
+        setCover(data.live || !trackCover ? stationLogo : trackCover);
         setStatus("LIVE ON AIR", true);
         messageElement.textContent = "";
       } catch (error) {
