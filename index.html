@@ -192,6 +192,14 @@
     let requestController = null;
     let stationLogo = "";
 
+    // Automatische Wiederverbindung bei unerwartetem Stream-Abbruch.
+    let userPaused = false;
+    let hasPlayedOnce = false;
+    let reconnectTimer = null;
+    let reconnectAttempts = 0;
+    let reconnecting = false;
+    const MAX_RECONNECT_DELAY = 30000;
+
     function normalizeStation(value) {
       return String(value || "").trim().toLowerCase();
     }
@@ -306,6 +314,65 @@
       }
     }
 
+    function clearReconnectTimer() {
+      if (reconnectTimer !== null) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+    }
+
+    function scheduleReconnect(reason = "Stream unterbrochen", immediate = false) {
+      if (!currentStation || userPaused || !hasPlayedOnce || reconnectTimer !== null || reconnecting) return;
+
+      const delay = immediate ? 1000 : Math.min(3000 * (2 ** reconnectAttempts), MAX_RECONNECT_DELAY);
+      reconnectAttempts = Math.min(reconnectAttempts + 1, 4);
+      setStatus("VERBINDUNG WIRD NEU AUFGEBAUT");
+      messageElement.textContent = reason + " – automatischer Neustart in " +
+        Math.ceil(delay / 1000) + " Sekunde" + (delay === 1000 ? "" : "n") + ".";
+
+      reconnectTimer = setTimeout(async () => {
+        reconnectTimer = null;
+        if (!currentStation || userPaused || reconnecting) return;
+
+        reconnecting = true;
+        const stationAtStart = currentStation;
+        try {
+          audio.pause();
+          audio.src = "https://stream.laut.fm/" + encodeURIComponent(stationAtStart);
+          audio.load();
+          await audio.play();
+          // Das playing-Event bestätigt den erfolgreichen Neustart.
+        } catch (error) {
+          if (error && error.name === "NotAllowedError") {
+            setStatus("START ERFORDERLICH");
+            messageElement.textContent = "Der Browser blockiert den automatischen Neustart. Bitte einmal auf „Wiedergabe starten“ tippen.";
+            hasPlayedOnce = false;
+          } else if (!userPaused && stationAtStart === currentStation) {
+            messageElement.textContent = "Verbindung fehlgeschlagen – erneuter Versuch folgt automatisch.";
+          }
+        } finally {
+          reconnecting = false;
+          if (!userPaused && stationAtStart === currentStation && audio.paused && hasPlayedOnce && !reconnectTimer) {
+            scheduleReconnect("Stream weiterhin nicht erreichbar");
+          }
+        }
+      }, delay);
+    }
+
+    function markStreamPlaying() {
+      hasPlayedOnce = true;
+      reconnectAttempts = 0;
+      clearReconnectTimer();
+      setStatus("LIVE ON AIR", true);
+      messageElement.textContent = "";
+      updatePlayButton();
+    }
+
+    function handleUnexpectedStop(reason) {
+      updatePlayButton();
+      if (!userPaused && hasPlayedOnce) scheduleReconnect(reason, true);
+    }
+
     async function openStation(rawName) {
       const station = normalizeStation(rawName);
       if (!validStation(station)) {
@@ -315,9 +382,17 @@
       }
 
       if (station !== currentStation) {
+        clearReconnectTimer();
+        reconnectAttempts = 0;
+        hasPlayedOnce = false;
+        userPaused = false;
+        reconnecting = false;
         audio.pause();
         audio.removeAttribute("src");
         audio.load();
+      } else {
+        clearReconnectTimer();
+        userPaused = false;
       }
 
       currentStation = station;
@@ -349,8 +424,8 @@
 
       if (autoplayPromise) {
         autoplayPromise.then(() => {
-          updatePlayButton();
-          messageElement.textContent = "";
+          userPaused = false;
+          markStreamPlaying();
         }).catch(() => {
           // Browser blockieren hörbares Autoplay ohne vorherige Nutzeraktion.
           messageElement.textContent = "Zum Starten bitte auf „Sender starten“ tippen.";
@@ -370,20 +445,43 @@
 
     playButton.addEventListener("click", async () => {
       if (!currentStation) return;
+
+      if (!audio.paused) {
+        // Bewusste Pause durch den Nutzer: keine automatische Wiederaufnahme.
+        userPaused = true;
+        clearReconnectTimer();
+        audio.pause();
+        updatePlayButton();
+        setStatus("PAUSIERT");
+        messageElement.textContent = "Wiedergabe pausiert.";
+        return;
+      }
+
+      userPaused = false;
+      clearReconnectTimer();
       try {
-        if (audio.paused) await audio.play();
-        else audio.pause();
+        await audio.play();
+        markStreamPlaying();
       } catch (error) {
+        updatePlayButton();
+        setStatus("START NICHT MÖGLICH");
         messageElement.textContent = "Wiedergabe nicht möglich. Bitte erneut versuchen.";
       }
-      updatePlayButton();
     });
 
+    audio.addEventListener("playing", markStreamPlaying);
     audio.addEventListener("play", updatePlayButton);
-    audio.addEventListener("pause", updatePlayButton);
-    audio.addEventListener("error", () => {
+    audio.addEventListener("pause", () => {
       updatePlayButton();
-      messageElement.textContent = "Stream momentan nicht erreichbar. Bitte später erneut versuchen.";
+      // pause kann auch durch Browser/Netzwerk ausgelöst werden.
+      if (!userPaused && !reconnecting && hasPlayedOnce) {
+        handleUnexpectedStop("Wiedergabe wurde unterbrochen");
+      }
+    });
+    audio.addEventListener("ended", () => handleUnexpectedStop("Stream wurde beendet"));
+    audio.addEventListener("error", () => handleUnexpectedStop("Stream-Verbindung verloren"));
+    audio.addEventListener("stalled", () => {
+      if (!userPaused && hasPlayedOnce) scheduleReconnect("Stream liefert keine Daten");
     });
 
     const params = new URLSearchParams(window.location.search);
