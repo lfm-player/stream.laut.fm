@@ -17,6 +17,7 @@
       --muted: #9aa8bd;
       --accent: #4d7cfe;
       --accent-light: #6e93ff;
+      --widget-bg: #121a2f;
       --live: #ff3b5c;
     }
     * { box-sizing: border-box; }
@@ -30,17 +31,17 @@
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
       background:
-        radial-gradient(circle at 50% 20%, rgba(30,45,85,.42), transparent 58%),
-        linear-gradient(180deg, #0f172a 0%, var(--bg) 100%);
+        radial-gradient(circle at 50% 20%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 58%),
+        linear-gradient(180deg, color-mix(in srgb, var(--widget-bg) 72%, #0f172a) 0%, var(--bg) 100%);
     }
     .app { width: min(100%, 440px); }
     .player {
       padding: 28px;
       text-align: center;
-      background: var(--panel);
+      background: color-mix(in srgb, var(--widget-bg) 82%, transparent);
       border: 1px solid var(--line);
       border-radius: 22px 22px 42px 42px;
-      box-shadow: 0 20px 55px rgba(0,0,0,.48), 0 0 40px rgba(77,124,254,.12);
+      box-shadow: 0 20px 55px rgba(0,0,0,.48), 0 0 40px color-mix(in srgb, var(--accent) 16%, transparent);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
     }
@@ -53,13 +54,13 @@
     @media (hover: hover) and (pointer: fine) {
       .player:hover {
         transform: translateY(-3px);
-        border-color: rgba(110,147,255,.28);
-        box-shadow: 0 25px 62px rgba(0,0,0,.5), 0 0 46px rgba(77,124,254,.19);
+        border-color: color-mix(in srgb, var(--accent-light) 38%, transparent);
+        box-shadow: 0 25px 62px rgba(0,0,0,.5), 0 0 46px color-mix(in srgb, var(--accent) 24%, transparent);
       }
     }
     .player:active {
       transform: scale(.992);
-      box-shadow: 0 15px 42px rgba(0,0,0,.45), 0 0 34px rgba(77,124,254,.16);
+      box-shadow: 0 15px 42px rgba(0,0,0,.45), 0 0 34px color-mix(in srgb, var(--accent) 20%, transparent);
     }
     .cover img {
       transition: transform .35s ease, filter .35s ease;
@@ -81,11 +82,12 @@
       border: 1px solid var(--line); border-radius: 12px;
       font: inherit; outline: none;
     }
-    input:focus { border-color: var(--accent-light); box-shadow: 0 0 0 3px rgba(77,124,254,.16); }
+    input::placeholder { color: #8793a8; opacity: 1; }
+    input:focus { border-color: var(--accent-light); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
     .load-button, .play-button {
       border: 0; color: white; font: inherit; font-weight: 800; cursor: pointer;
       background: linear-gradient(135deg, var(--accent), var(--accent-light));
-      box-shadow: 0 8px 24px rgba(77,124,254,.25);
+      box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 30%, transparent);
       transition: transform .18s ease, filter .18s ease;
     }
     .load-button { padding: 0 16px; border-radius: 12px; white-space: nowrap; }
@@ -113,10 +115,24 @@
     .play-button { width: 100%; padding: 15px 20px; border-radius: 999px; font-size: 1rem; }
     .play-button.playing { background: linear-gradient(135deg, #25365f, #344b82); }
     .message { min-height: 20px; margin: 14px 0 0; color: var(--muted); font-size: .78rem; line-height: 1.4; }
-    .share { display: inline-block; margin-top: 17px; color: #aebfff; font-size: .82rem; text-decoration: none; }
+    .share { display: inline-block; margin-top: 17px; color: var(--accent-light); font-size: .82rem; text-decoration: none; }
     .share:hover { text-decoration: underline; }
     .footnote { margin: 16px 8px 0; color: #78869d; text-align: center; font-size: .72rem; line-height: 1.5; }
 
+    .generator { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); text-align: left; }
+    .generator h2 { margin: 0 0 12px; font-size: 1rem; }
+    .generator-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+    .generator-field { min-width: 0; }
+    .generator-field label { margin: 0 0 6px; color: var(--muted); font-size: .72rem; }
+    .color-control { display: flex; gap: 7px; align-items: center; }
+    .color-control input[type="color"] { width: 43px; height: 39px; padding: 3px; flex: 0 0 43px; cursor: pointer; }
+    .color-control input[type="text"] { width: 100%; padding: 10px 8px; font-size: .78rem; }
+    .color-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .color-preset { width: 23px; height: 23px; padding: 0; border: 2px solid rgba(255,255,255,.5); border-radius: 50%; box-shadow: none; }
+    .color-preset[aria-pressed="true"] { outline: 2px solid white; outline-offset: 2px; }
+    .transparent-option { display: flex; align-items: center; gap: 8px; margin: 13px 0; color: var(--muted); font-size: .78rem; }
+    .transparent-option input { flex: 0 0 auto; width: 16px; height: 16px; accent-color: var(--accent); }
+    .generator-note { margin: 8px 0 0; color: var(--muted); font-size: .68rem; line-height: 1.45; }
     [hidden] { display: none !important; }
     .entry-button { margin-top: 16px; }
     .station-form input { width: 100%; display: block; }
@@ -124,7 +140,7 @@
     .status { margin-top: 0; }
     .change-station {
       margin-top: 16px; padding: 7px 10px; border: 0; background: transparent;
-      color: #aebfff; font: inherit; font-size: .82rem; cursor: pointer;
+      color: var(--accent-light); font: inherit; font-size: .82rem; cursor: pointer;
     }
     .change-station:hover { text-decoration: underline; }
 
@@ -149,12 +165,43 @@
       <p class="subtitle">Deinen Sender starten</p>
       <form class="station-form" id="station-form">
         <label for="station-input">Dein laut.fm-Stationsname</label>
-        <input id="station-input" name="station" type="text" value="shout_fm"
-               placeholder="z. B. shout_fm" maxlength="80"
+        <input id="station-input" name="station" type="text"
+               placeholder="z. B. eins" maxlength="80"
                pattern="[A-Za-z0-9_-]+" autocomplete="off" spellcheck="false">
         <button class="play-button entry-button" type="submit">Sender öffnen</button>
       </form>
-      <p class="message" id="entry-message" role="status" aria-live="polite">Beispiel: shout_fm</p>
+      <p class="message" id="entry-message" role="status" aria-live="polite">Beispiel: eins</p>
+    </section>
+
+    <section class="generator" id="color-settings" aria-label="Player-Farbeinstellungen">
+        <h2>Widget individuell gestalten</h2>
+        <div class="generator-grid">
+          <div class="generator-field">
+            <label for="accent-picker">Akzentfarbe</label>
+            <div class="color-control"><input id="accent-hex" type="text" value="#4d7cfe" maxlength="7" aria-label="Hex-Farbwert Akzentfarbe"><input id="accent-picker" type="color" value="#4d7cfe" aria-label="Akzentfarbe wählen"></div>
+          </div>
+          <div class="generator-field">
+            <label for="bg-picker">Hintergrundfarbe</label>
+            <div class="color-control"><input id="bg-hex" type="text" value="#121a2f" maxlength="7" aria-label="Hex-Farbwert Hintergrund"><input id="bg-picker" type="color" value="#121a2f" aria-label="Hintergrundfarbe wählen"></div>
+          </div>
+          <div class="generator-field">
+            <label for="text-picker">Schriftfarbe</label>
+            <div class="color-control"><input id="text-hex" type="text" value="#f5f7fb" maxlength="7" aria-label="Hex-Farbwert Schrift"><input id="text-picker" type="color" value="#f5f7fb" aria-label="Schriftfarbe wählen"></div>
+          </div>
+        </div>
+        <div class="color-presets" aria-label="Farbvorschläge">
+          <button class="color-preset" type="button" style="background:#4d7cfe" data-color="#4d7cfe" aria-label="Blau" aria-pressed="true"></button>
+          <button class="color-preset" type="button" style="background:#12bfc9" data-color="#12bfc9" aria-label="Türkis" aria-pressed="false"></button>
+          <button class="color-preset" type="button" style="background:#9365ed" data-color="#9365ed" aria-label="Lila" aria-pressed="false"></button>
+          <button class="color-preset" type="button" style="background:#ef5350" data-color="#ef5350" aria-label="Rot" aria-pressed="false"></button>
+          <button class="color-preset" type="button" style="background:#31b878" data-color="#31b878" aria-label="Grün" aria-pressed="false"></button>
+          <button class="color-preset" type="button" style="background:#ed913b" data-color="#ed913b" aria-label="Orange" aria-pressed="false"></button>
+          <button class="color-preset" type="button" style="background:#e65baf" data-color="#e65baf" aria-label="Pink" aria-pressed="false"></button>
+          <button class="color-preset" type="button" style="background:#e7edf7" data-color="#e7edf7" aria-label="Hell" aria-pressed="false"></button>
+        </div>
+        <label class="transparent-option"><input id="transparent-bg" type="checkbox"> Hintergrund transparent</label>
+        <p class="generator-note">Die Farben werden direkt auf diesen eigenständigen Player angewendet.</p>
+      </section>
     </section>
 
     <section class="player" id="player-screen" aria-label="laut.fm Webplayer" hidden>
@@ -171,9 +218,123 @@
   <script>
     "use strict";
 
-    const DEFAULT_STATION = "shout_fm";
     const API_BASE = "https://api.laut.fm/station/";
+    const params = new URLSearchParams(window.location.search);
 
+    function isHexColor(value) {
+      return /^#[0-9a-f]{6}$/i.test(String(value || ""));
+    }
+
+    function applyPlayerTheme() {
+      const accent = params.get("accent");
+      const bg = params.get("bg");
+      const text = params.get("text");
+      if (isHexColor("#" + (accent || ""))) {
+        document.documentElement.style.setProperty("--accent", "#" + accent);
+        document.documentElement.style.setProperty("--accent-light", "color-mix(in srgb, #" + accent + " 72%, white)");
+      }
+      if (isHexColor("#" + (bg || ""))) {
+        document.documentElement.style.setProperty("--widget-bg", "#" + bg);
+        document.documentElement.style.setProperty("--bg", "color-mix(in srgb, #" + bg + " 35%, #080d18)");
+      }
+      if (isHexColor("#" + (text || ""))) {
+        document.documentElement.style.setProperty("--text", "#" + text);
+      }
+      if (params.get("transparent") === "1") {
+        document.body.style.background = "transparent";
+        document.querySelectorAll(".player").forEach(card => {
+          card.style.background = "transparent";
+          card.style.borderColor = "transparent";
+          card.style.boxShadow = "none";
+          card.style.backdropFilter = "none";
+          card.style.webkitBackdropFilter = "none";
+        });
+      }
+    }
+
+    function setupColorGenerator() {
+      const pairs = [["accent", "#4d7cfe"], ["bg", "#121a2f"], ["text", "#f5f7fb"]];
+      const getColor = (key, fallback) => {
+        const value = params.get(key);
+        return isHexColor("#" + (value || "")) ? "#" + value : fallback;
+      };
+
+      function applySelectedColors() {
+        const accent = document.getElementById("accent-hex").value;
+        const background = document.getElementById("bg-hex").value;
+        const textColor = document.getElementById("text-hex").value;
+
+        if (!isHexColor(accent) || !isHexColor(background) || !isHexColor(textColor)) return;
+
+        document.documentElement.style.setProperty("--accent", accent);
+        document.documentElement.style.setProperty("--accent-light", "color-mix(in srgb, " + accent + " 72%, white)");
+        document.documentElement.style.setProperty("--widget-bg", background);
+        document.documentElement.style.setProperty("--text", textColor);
+
+        const transparent = document.getElementById("transparent-bg").checked;
+        document.querySelectorAll(".player").forEach(card => {
+          card.style.background = transparent
+            ? "transparent"
+            : "color-mix(in srgb, " + background + " 82%, transparent)";
+          if (transparent) {
+            card.style.borderColor = "transparent";
+            card.style.boxShadow = "none";
+            card.style.backdropFilter = "none";
+            card.style.webkitBackdropFilter = "none";
+          } else {
+            card.style.borderColor = "";
+            card.style.boxShadow = "";
+            card.style.backdropFilter = "";
+            card.style.webkitBackdropFilter = "";
+          }
+        });
+
+        document.body.style.background = transparent
+          ? "transparent"
+          : "";
+
+      }
+
+      pairs.forEach(([key, fallback]) => {
+        const initial = getColor(key, fallback);
+        const picker = document.getElementById(key + "-picker");
+        const hex = document.getElementById(key + "-hex");
+        picker.value = initial;
+        hex.value = initial;
+
+        picker.addEventListener("input", () => {
+          hex.value = picker.value;
+          applySelectedColors();
+        });
+        hex.addEventListener("input", () => {
+          if (isHexColor(hex.value)) {
+            picker.value = hex.value;
+            applySelectedColors();
+          }
+        });
+        hex.addEventListener("change", () => {
+          if (!isHexColor(hex.value)) hex.value = fallback;
+          picker.value = hex.value;
+          applySelectedColors();
+        });
+      });
+
+      document.querySelectorAll(".color-preset").forEach(button => {
+        button.addEventListener("click", () => {
+          const color = button.dataset.color;
+          document.getElementById("accent-picker").value = color;
+          document.getElementById("accent-hex").value = color;
+          document.querySelectorAll(".color-preset").forEach(item => {
+            item.setAttribute("aria-pressed", String(item === button));
+          });
+          applySelectedColors();
+        });
+      });
+
+      document.getElementById("transparent-bg").checked = params.get("transparent") === "1";
+      document.getElementById("transparent-bg").addEventListener("change", applySelectedColors);
+      applySelectedColors();
+    }
     const entryScreen = document.getElementById("entry-screen");
     const playerScreen = document.getElementById("player-screen");
     const form = document.getElementById("station-form");
@@ -186,7 +347,9 @@
     const playButton = document.getElementById("play-button");
     const messageElement = document.getElementById("message");
     const audio = document.getElementById("audio");
-
+    const colorSettings = document.getElementById("color-settings");
+    applyPlayerTheme();
+    setupColorGenerator();
     let currentStation = "";
     let refreshTimer = null;
     let requestController = null;
@@ -412,6 +575,7 @@
 
       entryScreen.hidden = true;
       playerScreen.hidden = false;
+      if (colorSettings) colorSettings.hidden = true;
       setStatus("SENDER WIRD GELADEN");
       songElement.textContent = "Lade aktuellen Titel …";
       coverElement.textContent = "Lade Senderlogo …";
@@ -484,13 +648,13 @@
       if (!userPaused && hasPlayedOnce) scheduleReconnect("Stream liefert keine Daten");
     });
 
-    const params = new URLSearchParams(window.location.search);
     const initialStation = params.get("station");
     if (initialStation) {
       stationInput.value = initialStation;
+      if (colorSettings) colorSettings.hidden = true;
       openStation(initialStation);
     } else {
-      stationInput.value = DEFAULT_STATION;
+      stationInput.value = "";
     }
   </script>
 </body>
