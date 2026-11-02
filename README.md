@@ -32,7 +32,7 @@ Mit diesem Player kann jeder seinen gewünschten laut.fm-Sender direkt im Browse
 
 Beispiel:
 
-`https://lfm-player.github.io/stream.laut.fm/?station=shout_fm`
+`https://lfm-player.github.io/stream.laut.fm/?station=eins`
 
 Der Stationsname kann über den URL-Parameter `station` übergeben werden.
 
