@@ -6,6 +6,7 @@ Mit diesem Player kann jeder seinen gewünschten laut.fm-Sender direkt im Browse
 
 🌐 **Live-Demo:** https://lfm-player.github.io/stream.laut.fm/
 
+Die Verwendung erfolgt auf eigene Gefahr!!
 ---
 
 ## ✨ Funktionen
