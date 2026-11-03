@@ -57,6 +57,7 @@ API-Endpunkte:
 
 - Stationsinformationen: `https://api.laut.fm/station/{station}`
 - Aktueller Titel: `https://api.laut.fm/station/{station}/current_song`
+- Cover Anzeige: `https://api.laut.fm/station/{station}/cover` 
 
 Die Audiowiedergabe erfolgt über den jeweiligen laut.fm-Stream.
 
