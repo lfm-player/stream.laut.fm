@@ -90,4 +90,4 @@ Es besteht keine offizielle Verbindung, Partnerschaft oder Zusammenarbeit mit la
 
 Alle genannten Marken, Produktnamen und Dienstleistungsbezeichnungen sind Eigentum der jeweiligen Rechteinhaber.
 
-**2026 lfm-player. Die Verwendung erfolgt auf eigene Gefahr!**
+**lfm-player. Die Verwendung erfolgt auf eigene Gefahr!**
