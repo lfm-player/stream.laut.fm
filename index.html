@@ -518,7 +518,11 @@
    ========================================================= */
 
 const API_BASE = "https://api.laut.fm/station/";
-const STREAM_BASE = "https://stream.laut.fm/";
+// Experimenteller Direkt-Stream. Bei shout_fm lautet der Host shoutfm.stream.laut.fm.
+function getDirectStreamUrl(station) {
+  const streamHost = station.replace(/_/g, "");
+  return "https://" + streamHost + ".stream.laut.fm/" + encodeURIComponent(station);
+}
 const params = new URLSearchParams(window.location.search);
 
 const elements = {
@@ -619,7 +623,7 @@ function startReconnect(reason) {
     if (!state.station || state.userPaused) return;
 
     try {
-      elements.audio.src = STREAM_BASE + encodeURIComponent(state.station);
+      elements.audio.src = getDirectStreamUrl(state.station);
       elements.audio.load();
       await elements.audio.play();
     } catch (error) {
@@ -755,7 +759,7 @@ async function openStation(rawName) {
   window.history.replaceState({}, "", pageUrl.toString());
 
   /* Audio-Start direkt im Formular-Klick-Kontext */
-  elements.audio.src = STREAM_BASE + encodeURIComponent(station);
+  elements.audio.src = getDirectStreamUrl(station);
   const playAttempt = elements.audio.play();
 
   if (playAttempt && typeof playAttempt.then === "function") {
@@ -798,7 +802,7 @@ elements.playButton.addEventListener("click", async () => {
 
   try {
     if (!elements.audio.src) {
-      elements.audio.src = STREAM_BASE + encodeURIComponent(state.station);
+      elements.audio.src = getDirectStreamUrl(state.station);
     }
     await elements.audio.play();
     markPlaying();
