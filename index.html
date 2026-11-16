@@ -514,8 +514,8 @@
     const MAX_RECONNECT_DELAY = 30000;
     
     // Überwacht, ob der Audiostream tatsächlich weiterläuft.
-    const WATCHDOG_INTERVAL = 3000;
-    const WATCHDOG_TIMEOUT = 9000;
+    const WATCHDOG_INTERVAL = 2000;
+    const WATCHDOG_TIMEOUT = 6000;
     let lastAudioTime = 0;
     let lastAudioProgressAt = 0;
     let watchdogTimer = null; function normalizeStation(value) { return String(value || "").trim().toLowerCase(); } function validStation(value) { return /^[a-z0-9_-]{1,80}$/.test(value); } function prettyStationName(value) { return value.replace(/[_-]+/g, " ").replace(/\b\w/g, char => char.toUpperCase()); } function setStatus(text, isLive = false) { statusBadge.textContent = text; statusBadge.classList.toggle("live", isLive); } function setCover(url) { const image = document.createElement("img"); const requestedUrl = url || stationLogo; image.alt = "Cover oder Senderlogo von " + currentStation; image.src = requestedUrl || ""; image.onerror = () => { image.onerror = null; if (stationLogo && requestedUrl !== stationLogo) { image.src = stationLogo; } else { coverElement.textContent = "Kein Bild verfügbar"; } }; coverElement.replaceChildren(image); } function updatePlayButton() { const playing = !audio.paused; playButton.textContent = playing ? "❚❚ Wiedergabe pausieren" : "▶ Wiedergabe starten"; playButton.classList.toggle("playing", playing); } async function loadStationInfo(station) {
