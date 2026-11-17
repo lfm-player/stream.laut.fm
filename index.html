@@ -591,7 +591,7 @@ function showCover(url) {
   }
 
   const image = document.createElement("img");
-  image.alt = "Cover oder Senderlogo von " + state.station;
+  image.alt = "";
   image.src = imageUrl;
   image.onerror = () => {
     image.onerror = null;
