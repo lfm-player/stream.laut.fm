@@ -514,7 +514,7 @@
 
 /* =========================================================
    LAUT.FM PLAYER V2
-   Frischer Player-Code – ohne das alte Watchdog-System
+   Mit Audio-Watchdog und gestaffeltem Auto-Reconnect
    ========================================================= */
 
 const API_BASE = "https://api.laut.fm/station/";
@@ -544,8 +544,20 @@ const state = {
   reconnectTimer: null,
   songTimer: null,
   songRequest: null,
-  reconnectDelay: 3000
+  watchdogTimer: null,
+  lastAudioTime: 0,
+  lastAudioProgressAt: 0,
+  hasPlayedOnce: false,
+  reconnecting: false,
+  reconnectAttempts: 0
 };
+
+// Watchdog prüft alle 2 Sekunden, ob die Audiowiedergabe vorankommt.
+const WATCHDOG_INTERVAL = 2000;
+// Erst nach 6 Sekunden ohne Fortschritt wird neu verbunden.
+const WATCHDOG_TIMEOUT = 6000;
+// Wiederholungsabstände: 1, 2, 4, 8 und maximal 15 Sekunden.
+const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 15000];
 
 function normalizeStation(value) {
   return String(value || "").trim().toLowerCase();
@@ -600,8 +612,24 @@ function clearReconnect() {
   }
 }
 
+function stopWatchdog() {
+  if (state.watchdogTimer !== null) {
+    clearInterval(state.watchdogTimer);
+    state.watchdogTimer = null;
+  }
+}
+
+function startWatchdog() {
+  stopWatchdog();
+  state.lastAudioTime = Number.isFinite(elements.audio.currentTime)
+    ? elements.audio.currentTime : 0;
+  state.lastAudioProgressAt = Date.now();
+  state.watchdogTimer = setInterval(checkAudioProgress, WATCHDOG_INTERVAL);
+}
+
 function stopTimers() {
   clearReconnect();
+  stopWatchdog();
   if (state.songTimer !== null) {
     clearInterval(state.songTimer);
     state.songTimer = null;
@@ -619,30 +647,71 @@ function setAudioSource(station) {
   elements.audio.load();
 }
 
-function startReconnect(reason) {
-  if (!state.station || state.userPaused || state.reconnectTimer !== null) return;
+function scheduleReconnect(reason = "Stream unterbrochen", immediate = false) {
+  if (!state.station || state.userPaused || !state.hasPlayedOnce ||
+      state.reconnectTimer !== null || state.reconnecting) return;
+
+  const delay = immediate
+    ? 1000
+    : RECONNECT_DELAYS[Math.min(state.reconnectAttempts, RECONNECT_DELAYS.length - 1)];
+  state.reconnectAttempts = Math.min(state.reconnectAttempts + 1, RECONNECT_DELAYS.length - 1);
 
   setStatus("VERBINDUNG WIRD NEU AUFGEBAUT");
-  elements.message.textContent = reason + " – neuer Verbindungsversuch folgt.";
+  elements.message.textContent = reason + " – automatischer Neustart in " +
+    Math.ceil(delay / 1000) + " Sekunde" + (delay === 1000 ? "" : "n") + ".";
 
   state.reconnectTimer = setTimeout(async () => {
     state.reconnectTimer = null;
-    if (!state.station || state.userPaused) return;
+    if (!state.station || state.userPaused || state.reconnecting) return;
 
+    const stationAtStart = state.station;
+    state.reconnecting = true;
     try {
-      setAudioSource(state.station);
+      elements.audio.pause();
+      setAudioSource(stationAtStart);
       await elements.audio.play();
+      // Das playing-Event bestätigt den erfolgreichen Neustart und setzt
+      // den Watchdog sowie den Wiederholungszähler zurück.
     } catch (error) {
+      state.reconnecting = false;
       if (error && error.name === "NotAllowedError") {
+        state.hasPlayedOnce = false;
+        stopWatchdog();
         setStatus("START ERFORDERLICH");
         elements.message.textContent =
-          "Bitte die Wiedergabe über die Schaltfläche erneut starten.";
+          "Der Browser blockiert den automatischen Neustart. Bitte die Wiedergabe erneut starten.";
         updatePlayButton();
-      } else {
-        startReconnect("Stream momentan nicht erreichbar");
+      } else if (!state.userPaused && stationAtStart === state.station) {
+        scheduleReconnect("Verbindung fehlgeschlagen – neuer Versuch", false);
       }
     }
-  }, state.reconnectDelay);
+  }, delay);
+}
+
+function checkAudioProgress() {
+  if (!state.station || state.userPaused || !state.hasPlayedOnce ||
+      state.reconnecting || state.reconnectTimer !== null || document.hidden) return;
+  if (elements.audio.paused || elements.audio.ended) return;
+
+  const currentTime = elements.audio.currentTime;
+  if (!Number.isFinite(currentTime)) return;
+  const now = Date.now();
+
+  if (currentTime > state.lastAudioTime + 0.1) {
+    state.lastAudioTime = currentTime;
+    state.lastAudioProgressAt = now;
+    return;
+  }
+
+  if (!state.lastAudioProgressAt) {
+    state.lastAudioTime = currentTime;
+    state.lastAudioProgressAt = now;
+    return;
+  }
+
+  if (now - state.lastAudioProgressAt >= WATCHDOG_TIMEOUT) {
+    scheduleReconnect("Audiostream liefert keinen Fortschritt", true);
+  }
 }
 
 async function loadStationInfo(station) {
@@ -718,7 +787,10 @@ async function loadCurrentSong() {
 
 function markPlaying() {
   clearReconnect();
-  state.reconnectDelay = 3000;
+  state.hasPlayedOnce = true;
+  state.reconnecting = false;
+  state.reconnectAttempts = 0;
+  startWatchdog();
   setStatus("LIVE ON AIR", true);
   elements.message.textContent = "";
   updatePlayButton();
@@ -735,6 +807,9 @@ async function openStation(rawName) {
   }
 
   stopTimers();
+  state.hasPlayedOnce = false;
+  state.reconnecting = false;
+  state.reconnectAttempts = 0;
   if (state.songRequest) state.songRequest.abort();
 
   if (station !== state.station) {
@@ -747,7 +822,6 @@ async function openStation(rawName) {
 
   state.station = station;
   state.userPaused = false;
-  state.reconnectDelay = 3000;
 
   elements.stationInput.value = station;
   elements.stationTitle.textContent = displayStationName(station);
@@ -783,6 +857,9 @@ async function openStation(rawName) {
     loadCurrentSong()
   ]);
 
+  // Ein inzwischen ausgewählter anderer Sender darf keinen zweiten
+  // Titel-Abfrage-Timer des vorherigen Senders erhalten.
+  if (station !== state.station) return;
   state.songTimer = setInterval(loadCurrentSong, 15000);
 }
 
@@ -797,6 +874,7 @@ elements.playButton.addEventListener("click", async () => {
   if (!elements.audio.paused) {
     state.userPaused = true;
     clearReconnect();
+    stopWatchdog();
     elements.audio.pause();
     setStatus("PAUSIERT");
     elements.message.textContent = "Wiedergabe pausiert.";
@@ -826,18 +904,41 @@ elements.audio.addEventListener("play", updatePlayButton);
 
 elements.audio.addEventListener("pause", () => {
   updatePlayButton();
+  if (!state.userPaused && state.hasPlayedOnce && !state.reconnecting) {
+    scheduleReconnect("Wiedergabe wurde unerwartet unterbrochen", true);
+  }
 });
 
 elements.audio.addEventListener("error", () => {
-  if (!state.userPaused) startReconnect("Stream-Verbindung unterbrochen");
+  if (!state.userPaused) scheduleReconnect("Stream-Verbindung unterbrochen", true);
 });
 
 elements.audio.addEventListener("ended", () => {
-  if (!state.userPaused) startReconnect("Stream wurde beendet");
+  if (!state.userPaused) scheduleReconnect("Stream wurde beendet", true);
 });
 
 elements.audio.addEventListener("stalled", () => {
-  if (!state.userPaused) startReconnect("Stream liefert momentan keine Daten");
+  if (!state.userPaused && state.hasPlayedOnce) {
+    scheduleReconnect("Stream liefert momentan keine Daten", true);
+  }
+});
+
+// Nach Rückkehr in den Tab die Fortschrittsmessung frisch starten.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && !state.userPaused && state.hasPlayedOnce) {
+    state.lastAudioTime = Number.isFinite(elements.audio.currentTime)
+      ? elements.audio.currentTime : 0;
+    state.lastAudioProgressAt = Date.now();
+    checkAudioProgress();
+  }
+});
+
+window.addEventListener("pageshow", () => {
+  if (!document.hidden && !state.userPaused && state.hasPlayedOnce) {
+    state.lastAudioTime = Number.isFinite(elements.audio.currentTime)
+      ? elements.audio.currentTime : 0;
+    state.lastAudioProgressAt = Date.now();
+  }
 });
 
 /* =========================================================
