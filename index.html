@@ -1,17 +1,13 @@
 <!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-
-<link rel="preconnect" href="https://stream.laut.fm">
-<link rel="preconnect" href="https://api.laut.fm">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0b1120">
-<meta name="description" content="Universeller laut.fm Webplayer V2 – Sender auswählen und direkt hören.">
-<title>laut.fm Player V2</title>
-<link rel="icon" href="favicon.ico" type="image/x-icon">
-<!-- Hintergrund sofort beim Laden festlegen -->
+  <html lang="de">
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="description" content="Universeller laut.fm Webplayer V2 – Sender auswählen und direkt hören.">
+  <title>laut.fm Player V2</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <!-- Hintergrund sofort beim Laden festlegen -->
 <style>
   html, body {
     background-color: #080d18;
@@ -522,11 +518,7 @@
    ========================================================= */
 
 const API_BASE = "https://api.laut.fm/station/";
-// Experimenteller Direkt-Stream. Bei shout_fm lautet der Host shoutfm.stream.laut.fm.
-function getDirectStreamUrl(station) {
-  const streamHost = station.replace(/_/g, "");
-  return "https://" + streamHost + ".stream.laut.fm/" + encodeURIComponent(station);
-}
+const STREAM_BASE = "https://stream.laut.fm/";
 const params = new URLSearchParams(window.location.search);
 
 const elements = {
@@ -627,7 +619,7 @@ function startReconnect(reason) {
     if (!state.station || state.userPaused) return;
 
     try {
-      elements.audio.src = getDirectStreamUrl(state.station);
+      elements.audio.src = STREAM_BASE + encodeURIComponent(state.station);
       elements.audio.load();
       await elements.audio.play();
     } catch (error) {
@@ -763,7 +755,7 @@ async function openStation(rawName) {
   window.history.replaceState({}, "", pageUrl.toString());
 
   /* Audio-Start direkt im Formular-Klick-Kontext */
-  elements.audio.src = getDirectStreamUrl(station);
+  elements.audio.src = STREAM_BASE + encodeURIComponent(station);
   const playAttempt = elements.audio.play();
 
   if (playAttempt && typeof playAttempt.then === "function") {
@@ -806,7 +798,7 @@ elements.playButton.addEventListener("click", async () => {
 
   try {
     if (!elements.audio.src) {
-      elements.audio.src = getDirectStreamUrl(state.station);
+      elements.audio.src = STREAM_BASE + encodeURIComponent(state.station);
     }
     await elements.audio.play();
     markPlaying();
@@ -935,12 +927,16 @@ function setupColorGenerator() {
 
 setupColorGenerator();
 
-/* Direkter Aufruf eines Senders über ?station=stationsname */
+/* Direkter Aufruf eines Senders über ?station=stationsname
+   Beim Neuladen wie im ursprünglichen Player erst nach window.load starten. */
 const initialStation = params.get("station");
 if (initialStation) {
   elements.stationInput.value = initialStation;
   if (elements.colorSettings) elements.colorSettings.hidden = true;
-  openStation(initialStation);
+
+  window.addEventListener("load", () => {
+    openStation(initialStation);
+  }, { once: true });
 }
 
 </script>
