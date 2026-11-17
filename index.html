@@ -586,7 +586,7 @@ function updatePlayButton() {
 function showCover(url) {
   const imageUrl = url || state.stationLogo;
   if (!imageUrl) {
-    elements.cover.textContent = "Kein Bild verfügbar";
+    elements.cover.replaceChildren();
     return;
   }
 
@@ -598,7 +598,7 @@ function showCover(url) {
     if (state.stationLogo && imageUrl !== state.stationLogo) {
       image.src = state.stationLogo;
     } else {
-      elements.cover.textContent = "Kein Bild verfügbar";
+      elements.cover.replaceChildren();
     }
   };
   elements.cover.replaceChildren(image);
