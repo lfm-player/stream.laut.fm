@@ -608,6 +608,17 @@ function stopTimers() {
   }
 }
 
+function setAudioSource(station) {
+  let source = elements.audio.querySelector("source");
+  if (!source) {
+    source = document.createElement("source");
+    source.type = "audio/mpeg";
+    elements.audio.appendChild(source);
+  }
+  source.src = STREAM_BASE + encodeURIComponent(station);
+  elements.audio.load();
+}
+
 function startReconnect(reason) {
   if (!state.station || state.userPaused || state.reconnectTimer !== null) return;
 
@@ -619,8 +630,7 @@ function startReconnect(reason) {
     if (!state.station || state.userPaused) return;
 
     try {
-      elements.audio.src = STREAM_BASE + encodeURIComponent(state.station);
-      elements.audio.load();
+      setAudioSource(state.station);
       await elements.audio.play();
     } catch (error) {
       if (error && error.name === "NotAllowedError") {
@@ -730,6 +740,7 @@ async function openStation(rawName) {
   if (station !== state.station) {
     elements.audio.pause();
     elements.audio.removeAttribute("src");
+    elements.audio.querySelectorAll("source").forEach(source => source.remove());
     elements.audio.load();
     state.stationLogo = "";
   }
@@ -755,7 +766,7 @@ async function openStation(rawName) {
   window.history.replaceState({}, "", pageUrl.toString());
 
   /* Audio-Start direkt im Formular-Klick-Kontext */
-  elements.audio.src = STREAM_BASE + encodeURIComponent(station);
+  setAudioSource(station);
   const playAttempt = elements.audio.play();
 
   if (playAttempt && typeof playAttempt.then === "function") {
@@ -797,8 +808,8 @@ elements.playButton.addEventListener("click", async () => {
   clearReconnect();
 
   try {
-    if (!elements.audio.src) {
-      elements.audio.src = STREAM_BASE + encodeURIComponent(state.station);
+    if (!elements.audio.querySelector("source")) {
+      setAudioSource(state.station);
     }
     await elements.audio.play();
     markPlaying();
