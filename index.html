@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b1120">
   <meta name="description" content="Universeller laut.fm Webplayer V2 – Sender auswählen und direkt hören.">
+<script>
+  const directStation = new URLSearchParams(window.location.search).get("station");
+  if (directStation && /^[a-z0-9_-]{1,80}$/i.test(directStation.trim())) {
+    document.documentElement.classList.add("direct-station");
+  }
+</script>
   <title>laut.fm Player V2</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon">
     <!-- Hintergrund sofort beim Laden festlegen -->
@@ -380,6 +386,11 @@
       display:none !important;
     
     }
+    html.direct-station #entry-screen,
+    html.direct-station #color-settings {
+      display:none !important;
+    }
+
     .entry-button {
       margin-top:16px;
     
