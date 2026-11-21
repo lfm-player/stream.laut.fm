@@ -1,655 +1,586 @@
 <!DOCTYPE html>
-  <html lang="de">
-  <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0b1120">
-  <meta name="description" content="Universeller laut.fm Webplayer V2 – Sender auswählen und direkt hören.">
-  <title>laut.fm Player</title>
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <!-- Hintergrund sofort beim Laden festlegen -->
-<style>
-  html, body {
-    background-color: #080d18;
-  }
-</style>
-    
+<html lang="de">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta content="#0b1120" name="theme-color"/>
+  <meta content="Universeller laut.fm Webplayer V3" name="description"/>
+  <title>
+   laut.fm Player
+  </title>
+  <link href="favicon.ico" rel="icon" type="image/x-icon"/>
+  <!-- Hintergrund sofort beim Laden festlegen -->
   <style>
-    :root {
-      color-scheme:dark;
-      --bg:#080d18;
-      --panel:rgba(18,26,47,.82);
-      --line:rgba(255,255,255,.09);
-      --text:#f5f7fb;
-      --muted:#9aa8bd;
-      --accent:#4d7cfe;
-      --accent-light:#6e93ff;
-      --widget-bg:#121a2f;
-      --live:#ff3b5c;
+html, body {
+     background-color: #080d18;
     
     }
-    * {
-      box-sizing:border-box;
+</style>        <style>
+:root {
+     color-scheme:dark;
+     --bg:#080d18;
+     --panel:rgba(18,26,47,.82);
+     --line:rgba(255,255,255,.09);
+     --text:#f5f7fb;
+     --muted:#9aa8bd;
+     --accent:#4d7cfe;
+     --accent-light:#6e93ff;
+     --widget-bg:#121a2f;
+     --live:#ff3b5c;
     
     }
-    body {
-      min-height:100vh;
-      margin:0;
-      padding:28px 16px;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      color:var(--text);
-      background:radial-gradient(circle at 50% 20%,color-mix(in srgb,var(--accent) 15%,transparent),transparent 58%),linear-gradient(180deg,color-mix(in srgb,var(--widget-bg) 72%,#0f172a) 0%,var(--bg) 100%);
+ * {
+     box-sizing:border-box;
     
     }
-    .app {
-      width:min(100%,440px);
+ body {
+     min-height:100vh;
+     margin:0;
+     padding:28px 16px;
+     display:flex;
+     justify-content:center;
+     align-items:center;
+     font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+     color:var(--text);
+     background:radial-gradient(circle at 50% 20%,color-mix(in srgb,var(--accent) 15%,transparent),transparent 58%),linear-gradient(180deg,color-mix(in srgb,var(--widget-bg) 72%,#0f172a) 0%,var(--bg) 100%);
     
     }
-    .player {
-      padding:28px;
-      text-align:center;
-      background:color-mix(in srgb,var(--widget-bg) 82%,transparent);
-      border:1px solid var(--line);
-      border-radius:22px 22px 42px 42px;
-      box-shadow:0 20px 55px rgba(0,0,0,.48),0 0 40px color-mix(in srgb,var(--accent) 16%,transparent);
-      backdrop-filter:blur(18px);
-      -webkit-backdrop-filter:blur(18px);
+ .app {
+     width:min(100%,440px);
     
     }
-    /* Dezente Berührungs- und Hover-Animation wie beim ursprünglichen Player */ .player {
-      transform:translateY(0) scale(1);
-      transition:transform .24s ease,box-shadow .24s ease,border-color .24s ease;
-      -webkit-tap-highlight-color:transparent;
+ .player {
+     padding:28px;
+     text-align:center;
+     background:color-mix(in srgb,var(--widget-bg) 82%,transparent);
+     border:1px solid var(--line);
+     border-radius:22px 22px 42px 42px;
+     box-shadow:0 20px 55px rgba(0,0,0,.48),0 0 40px color-mix(in srgb,var(--accent) 16%,transparent);
+     backdrop-filter:blur(18px);
+     -webkit-backdrop-filter:blur(18px);
     
     }
-    @media (hover:hover) and (pointer:fine) {
-      .player:hover {
-        transform:translateY(-3px);
-        border-color:color-mix(in srgb,var(--accent-light) 38%,transparent);
-        box-shadow:0 25px 62px rgba(0,0,0,.5),0 0 46px color-mix(in srgb,var(--accent) 24%,transparent);
-    
-      }
+ /* Dezente Berührungs- und Hover-Animation wie beim ursprünglichen Player */
+ .player {
+     transform:translateY(0) scale(1);
+     transition:transform .24s ease,box-shadow .24s ease,border-color .24s ease;
+     -webkit-tap-highlight-color:transparent;
     
     }
-    .player:active {
-      transform:scale(.992);
-      box-shadow:0 15px 42px rgba(0,0,0,.45),0 0 34px color-mix(in srgb,var(--accent) 20%,transparent);
+ @media (hover:hover) and (pointer:fine) {
+     .player:hover {
+         transform:translateY(-3px);
+         border-color:color-mix(in srgb,var(--accent-light) 38%,transparent);
+         box-shadow:0 25px 62px rgba(0,0,0,.5),0 0 46px color-mix(in srgb,var(--accent) 24%,transparent);
+        
+        }
     
     }
-    .cover img {
-      transition:transform .35s ease,filter .35s ease;
+ .player:active {
+     transform:scale(.992);
+     box-shadow:0 15px 42px rgba(0,0,0,.45),0 0 34px color-mix(in srgb,var(--accent) 20%,transparent);
     
     }
-    @media (hover:hover) and (pointer:fine) {
-      .cover:hover img {
-        transform:scale(1.035);
-        filter:brightness(1.06);
-    
-      }
+ .cover img {
+     transition:transform .35s ease,filter .35s ease;
     
     }
-    @media (prefers-reduced-motion:reduce) {
-      .player,.cover img,.load-button,.play-button {
-        transition:none !important;
-    
-      }
-    
-    }
-    .brand {
-      margin:0 0 5px;
-      font-size:2rem;
-      font-weight:900;
-      letter-spacing:-.7px;
+ @media (hover:hover) and (pointer:fine) {
+     .cover:hover img {
+         transform:scale(1.035);
+         filter:brightness(1.06);
+        
+        }
     
     }
-    .subtitle {
-      margin:0 0 22px;
-      color:var(--muted);
-      font-size:.76rem;
-      letter-spacing:1.6px;
-      text-transform:uppercase;
+ @media (prefers-reduced-motion:reduce) {
+     .player,.cover img,.load-button,.play-button {
+         transition:none !important;
+        
+        }
     
     }
-    .station-form {
-      margin-bottom:22px;
-      text-align:left;
+ .brand {
+     margin:0 0 5px;
+     font-size:2rem;
+     font-weight:900;
+     letter-spacing:-.7px;
     
     }
-    label {
-      display:block;
-      margin-bottom:8px;
-      font-size:.88rem;
-      font-weight:700;
+ .subtitle {
+     margin:0 0 22px;
+     color:var(--muted);
+     font-size:.76rem;
+     letter-spacing:1.6px;
+     text-transform:uppercase;
     
     }
-    .input-row {
-      display:flex;
-      gap:8px;
+ .station-form {
+     margin-bottom:22px;
+     text-align:left;
     
     }
-    input {
-      min-width:0;
-      flex:1;
-      padding:13px 14px;
-      color:var(--text);
-      background:rgba(4,9,19,.72);
-      border:1px solid var(--line);
-      border-radius:12px;
-      font:inherit;
-      outline:none;
+ label {
+     display:block;
+     margin-bottom:8px;
+     font-size:.88rem;
+     font-weight:700;
     
     }
-    input::placeholder {
-      color:#8793a8;
-      opacity:1;
+ .input-row {
+     display:flex;
+     gap:8px;
     
     }
-    input:focus {
-      border-color:var(--accent-light);
-      box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent);
+ input {
+     min-width:0;
+     flex:1;
+     padding:13px 14px;
+     color:var(--text);
+     background:rgba(4,9,19,.72);
+     border:1px solid var(--line);
+     border-radius:12px;
+     font:inherit;
+     outline:none;
     
     }
-    .load-button,.play-button {
-      border:0;
-      color:white;
-      font:inherit;
-      font-weight:800;
-      cursor:pointer;
-      background:linear-gradient(135deg,var(--accent),var(--accent-light));
-      box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 30%,transparent);
-      transition:transform .18s ease,filter .18s ease;
+ input::placeholder {
+     color:#8793a8;
+     opacity:1;
     
     }
-    .load-button {
-      padding:0 16px;
-      border-radius:12px;
-      white-space:nowrap;
+ input:focus {
+     border-color:var(--accent-light);
+     box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent);
     
     }
-    .load-button:hover,.play-button:hover {
-      filter:brightness(1.08);
-      transform:translateY(-1px);
+ .load-button,.play-button {
+     border:0;
+     color:white;
+     font:inherit;
+     font-weight:800;
+     cursor:pointer;
+     background:linear-gradient(135deg,var(--accent),var(--accent-light));
+     box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 30%,transparent);
+     transition:transform .18s ease,filter .18s ease;
     
     }
-    .status {
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      margin-bottom:20px;
-      padding:6px 13px;
-      color:var(--muted);
-      background:rgba(255,255,255,.045);
-      border:1px solid var(--line);
-      border-radius:999px;
-      font-size:.72rem;
-      font-weight:800;
-      letter-spacing:1px;
+ .load-button {
+     padding:0 16px;
+     border-radius:12px;
+     white-space:nowrap;
     
     }
-    .status::before {
-      content:"";
-      width:7px;
-      height:7px;
-      border-radius:50%;
-      background:#7b8799;
+ .load-button:hover,.play-button:hover {
+     filter:brightness(1.08);
+     transform:translateY(-1px);
     
     }
-    .status.live {
-      color:var(--live);
-      background:rgba(255,59,92,.09);
-      border-color:rgba(255,59,92,.25);
+ .status {
+     display:inline-flex;
+     align-items:center;
+     gap:8px;
+     margin-bottom:20px;
+     padding:6px 13px;
+     color:var(--muted);
+     background:rgba(255,255,255,.045);
+     border:1px solid var(--line);
+     border-radius:999px;
+     font-size:.72rem;
+     font-weight:800;
+     letter-spacing:1px;
     
     }
-    .status.live::before {
-      background:var(--live);
-      box-shadow:0 0 0 5px rgba(255,59,92,.12);
+ .status::before {
+     content:"";
+     width:7px;
+     height:7px;
+     border-radius:50%;
+     background:#7b8799;
     
     }
-    .cover {
-      width:210px;
-      aspect-ratio:1;
-      margin:0 auto 22px;
-      overflow:hidden;
-      display:grid;
-      place-items:center;
-      background:rgba(0,0,0,.24);
-      border:1px solid var(--line);
-      border-radius:17px;
-      box-shadow:0 12px 30px rgba(0,0,0,.35);
-      color:var(--muted);
-      font-size:.85rem;
+ .status.live {
+     color:var(--live);
+     background:rgba(255,59,92,.09);
+     border-color:rgba(255,59,92,.25);
     
     }
-    .cover img {
-      width:100%;
-      height:100%;
-      object-fit:cover;
+ .status.live::before {
+     background:var(--live);
+     box-shadow:0 0 0 5px rgba(255,59,92,.12);
     
     }
-    .song {
-      min-height:58px;
-      margin:0 0 22px;
-      color:var(--muted);
-      font-size:.92rem;
-      line-height:1.45;
-      overflow-wrap:anywhere;
+ .cover {
+     width:210px;
+     aspect-ratio:1;
+     margin:0 auto 22px;
+     overflow:hidden;
+     display:grid;
+     place-items:center;
+     background:rgba(0,0,0,.24);
+     border:1px solid var(--line);
+     border-radius:17px;
+     box-shadow:0 12px 30px rgba(0,0,0,.35);
+     color:var(--muted);
+     font-size:.85rem;
     
     }
-    .song strong {
-      display:block;
-      margin-bottom:4px;
-      color:white;
-      font-size:1.12rem;
+ .cover img {
+     width:100%;
+     height:100%;
+     object-fit:cover;
     
     }
-    .play-button {
-      width:100%;
-      padding:15px 20px;
-      border-radius:999px;
-      font-size:1rem;
+ .song {
+     min-height:58px;
+     margin:0 0 22px;
+     color:var(--muted);
+     font-size:.92rem;
+     line-height:1.45;
+     overflow-wrap:anywhere;
     
     }
-    .play-button.playing {
-      background:linear-gradient(135deg,#25365f,#344b82);
+ .song strong {
+     display:block;
+     margin-bottom:4px;
+     color:white;
+     font-size:1.12rem;
     
     }
-    .message {
-      min-height:20px;
-      margin:14px 0 0;
-      color:var(--muted);
-      font-size:.78rem;
-      line-height:1.4;
+ .play-button {
+     width:100%;
+     padding:15px 20px;
+     border-radius:999px;
+     font-size:1rem;
     
     }
-    .share {
-      display:inline-block;
-      margin-top:17px;
-      color:var(--accent-light);
-      font-size:.82rem;
-      text-decoration:none;
+ .play-button.playing {
+     background:linear-gradient(135deg,#25365f,#344b82);
     
     }
-    .share:hover {
-      text-decoration:underline;
+ .message {
+     min-height:20px;
+     margin:14px 0 0;
+     color:var(--muted);
+     font-size:.78rem;
+     line-height:1.4;
     
     }
-    .footnote {
-      margin:16px 8px 0;
-      color:#78869d;
-      text-align:center;
-      font-size:.72rem;
-      line-height:1.5;
+ .share {
+     display:inline-block;
+     margin-top:17px;
+     color:var(--accent-light);
+     font-size:.82rem;
+     text-decoration:none;
     
     }
-    .generator {
-      margin-top:18px;
-      padding-top:16px;
-      border-top:1px solid var(--line);
-      text-align:left;
+ .share:hover {
+     text-decoration:underline;
     
     }
-    .generator h2 {
-      margin:0 0 12px;
-      font-size:1rem;
+ .footnote {
+     margin:16px 8px 0;
+     color:#78869d;
+     text-align:center;
+     font-size:.72rem;
+     line-height:1.5;
     
     }
-    .generator-grid {
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:11px;
+ .generator {
+     margin-top:18px;
+     padding-top:16px;
+     border-top:1px solid var(--line);
+     text-align:left;
     
     }
-    .generator-field {
-      min-width:0;
+ .generator h2 {
+     margin:0 0 12px;
+     font-size:1rem;
     
     }
-    .generator-field label {
-      margin:0 0 6px;
-      color:var(--muted);
-      font-size:.72rem;
+ .generator-grid {
+     display:grid;
+     grid-template-columns:1fr 1fr;
+     gap:11px;
     
     }
-    .color-control {
-      display:flex;
-      gap:7px;
-      align-items:center;
+ .generator-field {
+     min-width:0;
     
     }
-    .color-control input[type="color"] {
-      width:43px;
-      height:39px;
-      padding:3px;
-      flex:0 0 43px;
-      cursor:pointer;
+ .generator-field label {
+     margin:0 0 6px;
+     color:var(--muted);
+     font-size:.72rem;
     
     }
-    .color-control input[type="text"] {
-      width:100%;
-      padding:10px 8px;
-      font-size:.78rem;
+ .color-control {
+     display:flex;
+     gap:7px;
+     align-items:center;
     
     }
-    .color-presets {
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-top:12px;
+ .color-control input[type="color"] {
+     width:43px;
+     height:39px;
+     padding:3px;
+     flex:0 0 43px;
+     cursor:pointer;
     
     }
-    .color-preset {
-      width:23px;
-      height:23px;
-      padding:0;
-      border:2px solid rgba(255,255,255,.5);
-      border-radius:50%;
-      box-shadow:none;
+ .color-control input[type="text"] {
+     width:100%;
+     padding:10px 8px;
+     font-size:.78rem;
     
     }
-    .color-preset[aria-pressed="true"] {
-      outline:2px solid white;
-      outline-offset:2px;
+ .color-presets {
+     display:flex;
+     flex-wrap:wrap;
+     gap:8px;
+     margin-top:12px;
     
     }
-    .transparent-option {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      margin:13px 0;
-      color:var(--muted);
-      font-size:.78rem;
+ .color-preset {
+     width:23px;
+     height:23px;
+     padding:0;
+     border:2px solid rgba(255,255,255,.5);
+     border-radius:50%;
+     box-shadow:none;
     
     }
-    .transparent-option input {
-      flex:0 0 auto;
-      width:16px;
-      height:16px;
-      accent-color:var(--accent);
+ .color-preset[aria-pressed="true"] {
+     outline:2px solid white;
+     outline-offset:2px;
     
     }
-    .generator-note {
-      margin:8px 0 0;
-      color:var(--muted);
-      font-size:.68rem;
-      line-height:1.45;
+ .transparent-option {
+     display:flex;
+     align-items:center;
+     gap:8px;
+     margin:13px 0;
+     color:var(--muted);
+     font-size:.78rem;
     
     }
-    [hidden] {
-      display:none !important;
+ .transparent-option input {
+     flex:0 0 auto;
+     width:16px;
+     height:16px;
+     accent-color:var(--accent);
     
     }
-    .entry-button {
-      margin-top:16px;
+ .generator-note {
+     margin:8px 0 0;
+     color:var(--muted);
+     font-size:.68rem;
+     line-height:1.45;
     
     }
-    .station-form input {
-      width:100%;
-      display:block;
+ [hidden] {
+     display:none !important;
     
     }
-    .station-form label {
-      margin-top:2px;
+ .entry-button {
+     margin-top:16px;
     
     }
-    .status {
-      margin-top:0;
+ .station-form input {
+     width:100%;
+     display:block;
     
     }
-    .change-station {
-      margin-top:16px;
-      padding:7px 10px;
-      border:0;
-      background:transparent;
-      color:var(--accent-light);
-      font:inherit;
-      font-size:.82rem;
-      cursor:pointer;
+ .station-form label {
+     margin-top:2px;
     
     }
-    .change-station:hover {
-      text-decoration:underline;
+ .status {
+     margin-top:0;
     
     }
-    audio {
-      display:none;
+ .change-station {
+     margin-top:16px;
+     padding:7px 10px;
+     border:0;
+     background:transparent;
+     color:var(--accent-light);
+     font:inherit;
+     font-size:.82rem;
+     cursor:pointer;
     
     }
-    @media (max-width:480px) {
-      body {
-        align-items:flex-start;
-        padding-top:25px;
-        padding-bottom:25px;
-    
-      }
-      .player {
-        padding:24px;
-        border-radius:20px 20px 35px 35px;
-    
-      }
-      .cover {
-        width:170px;
-    
-      }
-      .brand {
-        font-size:1.8rem;
-    
-      }
-      .input-row {
-        flex-direction:column;
-    
-      }
-      .load-button {
-        min-height:46px;
-    
-      }
+ .change-station:hover {
+     text-decoration:underline;
     
     }
-    @media (prefers-reduced-motion:reduce) {
-      *,*::before,*::after {
-        transition-duration:.01ms !important;
-    
-      }
+ audio {
+     display:none;
     
     }
-  </style>
-  </head>
-  <body>
+ @media (max-width:480px) {
+     body {
+         align-items:flex-start;
+         padding-top:25px;
+         padding-bottom:25px;
+        
+        }
+     .player {
+         padding:24px;
+         border-radius:20px 20px 35px 35px;
+        
+        }
+     .cover {
+         width:170px;
+        
+        }
+     .brand {
+         font-size:1.8rem;
+        
+        }
+     .input-row {
+         flex-direction:column;
+        
+        }
+     .load-button {
+         min-height:46px;
+        
+        }
+    
+    }
+ @media (prefers-reduced-motion:reduce) {
+     *,*::before,*::after {
+         transition-duration:.01ms !important;
+        
+        }
+    
+    }
+</style>
+ </head>
+ <body>
   <main class="app">
-  <section class="player" id="entry-screen" aria-label="Sender auswählen">
-  <h1 class="brand">laut.fm PLAYER</h1>
-  <p class="subtitle">Deinen Sender starten</p>
-  <form class="station-form" id="station-form">
-  <label for="station-input">Dein laut.fm-Stationsname</label>
-  <input id="station-input" name="station" type="text"                placeholder="z. B. eins" maxlength="80"                pattern="[A-Za-z0-9_\-]+" autocomplete="off" spellcheck="false">
-  <button class="play-button entry-button" type="submit">Sender öffnen</button>
-  </form>
-  <p class="message" id="entry-message" role="status" aria-live="polite">Beispiel: eins</p>
-  </section>
-  <section class="generator" id="color-settings" aria-label="Player-Farbeinstellungen">
-  <h2>Widget individuell gestalten</h2>
-  <div class="generator-grid">
-  <div class="generator-field">
-  <label for="accent-picker">Akzentfarbe</label>
-  <div class="color-control"><input id="accent-hex" type="text" value="#4d7cfe" maxlength="7" aria-label="Hex-Farbwert Akzentfarbe"><input id="accent-picker" type="color" value="#4d7cfe" aria-label="Akzentfarbe wählen"></div>
-  </div>
-  <div class="generator-field">
-  <label for="bg-picker">Hintergrundfarbe</label>
-  <div class="color-control"><input id="bg-hex" type="text" value="#121a2f" maxlength="7" aria-label="Hex-Farbwert Hintergrund"><input id="bg-picker" type="color" value="#121a2f" aria-label="Hintergrundfarbe wählen"></div>
-  </div>
-  <div class="generator-field">
-  <label for="text-picker">Schriftfarbe</label>
-  <div class="color-control"><input id="text-hex" type="text" value="#f5f7fb" maxlength="7" aria-label="Hex-Farbwert Schrift"><input id="text-picker" type="color" value="#f5f7fb" aria-label="Schriftfarbe wählen"></div>
-  </div>
-  </div>
-  <div class="color-presets" aria-label="Farbvorschläge">
-  <button class="color-preset" type="button" style="background:#4d7cfe" data-color="#4d7cfe" aria-label="Blau" aria-pressed="true"></button>
-  <button class="color-preset" type="button" style="background:#12bfc9" data-color="#12bfc9" aria-label="Türkis" aria-pressed="false"></button>
-  <button class="color-preset" type="button" style="background:#9365ed" data-color="#9365ed" aria-label="Lila" aria-pressed="false"></button>
-  <button class="color-preset" type="button" style="background:#ef5350" data-color="#ef5350" aria-label="Rot" aria-pressed="false"></button>
-  <button class="color-preset" type="button" style="background:#31b878" data-color="#31b878" aria-label="Grün" aria-pressed="false"></button>
-  <button class="color-preset" type="button" style="background:#ed913b" data-color="#ed913b" aria-label="Orange" aria-pressed="false"></button>
-  <button class="color-preset" type="button" style="background:#e65baf" data-color="#e65baf" aria-label="Pink" aria-pressed="false"></button>
-  <button class="color-preset" type="button" style="background:#e7edf7" data-color="#e7edf7" aria-label="Hell" aria-pressed="false"></button>
-  </div>
-  <label class="transparent-option"><input id="transparent-bg" type="checkbox"> Hintergrund transparent</label>
-  <p class="generator-note">Die Farben werden direkt auf diesen eigenständigen Player angewendet.</p>
-  </section>
-  <section class="player" id="player-screen" aria-label="laut.fm Webplayer" hidden>
-  <h1 class="brand" id="station-title">Shout-FM</h1>
-  <div class="status live" id="status">LIVE ON AIR</div>
-  <div class="cover" id="cover"></div>
-  <div class="song" id="song">Lade aktuellen Titel …</div>
-  <button class="play-button" id="play-button" type="button" disabled>▶ Sender starten</button>
-  <p class="message" id="message" role="status" aria-live="polite"></p>
-  <audio id="audio" preload="none" playsinline></audio>
-  </section>
-  <p class="footnote">Stream, Senderinformationen und Cover werden von laut.fm bereitgestellt.</p>
+   <section aria-label="Sender ausw&auml;hlen" class="player" id="entry-screen">
+    <h1 class="brand">
+     laut.fm PLAYER
+    </h1>
+    <p class="subtitle">
+     Deinen Sender starten
+    </p>
+    <form class="station-form" id="station-form">
+     <label for="station-input">
+      Dein laut.fm-Stationsname
+     </label>
+     <input autocomplete="off" id="station-input" maxlength="80" name="station" pattern="[A-Za-z0-9_\-]+" placeholder="z. B. eins" spellcheck="false" type="text"/>
+     <button class="play-button entry-button" type="submit">
+      Sender &ouml;ffnen
+     </button>
+    </form>
+    <p aria-live="polite" class="message" id="entry-message" role="status">
+     Beispiel: eins
+    </p>
+   </section>
+   <section aria-label="Player-Farbeinstellungen" class="generator" id="color-settings">
+    <h2>
+     Widget individuell gestalten
+    </h2>
+    <div class="generator-grid">
+     <div class="generator-field">
+      <label for="accent-picker">
+       Akzentfarbe
+      </label>
+      <div class="color-control">
+       <input aria-label="Hex-Farbwert Akzentfarbe" id="accent-hex" maxlength="7" type="text" value="#4d7cfe"/>
+       <input aria-label="Akzentfarbe w&auml;hlen" id="accent-picker" type="color" value="#4d7cfe"/>
+      </div>
+     </div>
+     <div class="generator-field">
+      <label for="bg-picker">
+       Hintergrundfarbe
+      </label>
+      <div class="color-control">
+       <input aria-label="Hex-Farbwert Hintergrund" id="bg-hex" maxlength="7" type="text" value="#121a2f"/>
+       <input aria-label="Hintergrundfarbe w&auml;hlen" id="bg-picker" type="color" value="#121a2f"/>
+      </div>
+     </div>
+     <div class="generator-field">
+      <label for="text-picker">
+       Schriftfarbe
+      </label>
+      <div class="color-control">
+       <input aria-label="Hex-Farbwert Schrift" id="text-hex" maxlength="7" type="text" value="#f5f7fb"/>
+       <input aria-label="Schriftfarbe w&auml;hlen" id="text-picker" type="color" value="#f5f7fb"/>
+      </div>
+     </div>
+    </div>
+    <div aria-label="Farbvorschl&auml;ge" class="color-presets">
+     <button aria-label="Blau" aria-pressed="true" class="color-preset" data-color="#4d7cfe" style="background:#4d7cfe" type="button">
+     </button>
+     <button aria-label="T&uuml;rkis" aria-pressed="false" class="color-preset" data-color="#12bfc9" style="background:#12bfc9" type="button">
+     </button>
+     <button aria-label="Lila" aria-pressed="false" class="color-preset" data-color="#9365ed" style="background:#9365ed" type="button">
+     </button>
+     <button aria-label="Rot" aria-pressed="false" class="color-preset" data-color="#ef5350" style="background:#ef5350" type="button">
+     </button>
+     <button aria-label="Gr&uuml;n" aria-pressed="false" class="color-preset" data-color="#31b878" style="background:#31b878" type="button">
+     </button>
+     <button aria-label="Orange" aria-pressed="false" class="color-preset" data-color="#ed913b" style="background:#ed913b" type="button">
+     </button>
+     <button aria-label="Pink" aria-pressed="false" class="color-preset" data-color="#e65baf" style="background:#e65baf" type="button">
+     </button>
+     <button aria-label="Hell" aria-pressed="false" class="color-preset" data-color="#e7edf7" style="background:#e7edf7" type="button">
+     </button>
+    </div>
+    <label class="transparent-option">
+     <input id="transparent-bg" type="checkbox"/>
+     Hintergrund transparent
+    </label>
+    <p class="generator-note">
+     Die Farben werden direkt auf diesen eigenst&auml;ndigen Player angewendet.
+    </p>
+   </section>
+   <section aria-label="laut.fm Webplayer" class="player" hidden="" id="player-screen">
+    <h1 class="brand" id="station-title">
+     Shout-FM
+    </h1>
+    <div class="status live" id="status">
+     LIVE ON AIR
+    </div>
+    <div class="cover" id="cover">
+    </div>
+    <div class="song" id="song">
+     Lade aktuellen Titel &hellip;
+    </div>
+    <button class="play-button" disabled="" id="play-button" type="button">
+     ▶ Sender starten
+    </button>
+    <p aria-live="polite" class="message" id="message" role="status">
+    </p>
+    <audio id="audio" playsinline="" preload="none">
+    </audio>
+   </section>
+   <p class="footnote">
+    Stream, Senderinformationen und Cover werden von laut.fm bereitgestellt.
+   </p>
   </main>
-  <script>
-
-"use strict";
-
-/* =========================================================
-   LAUT.FM PLAYER V2
-   Mit Audio-Watchdog und gestaffeltem Auto-Reconnect
-   ========================================================= */
-
-const API_BASE = "https://api.laut.fm/station/";
-const STREAM_BASE = "https://stream.laut.fm/";
-const params = new URLSearchParams(window.location.search);
-
-const elements = {
-  entryScreen: document.getElementById("entry-screen"),
-  playerScreen: document.getElementById("player-screen"),
-  form: document.getElementById("station-form"),
-  stationInput: document.getElementById("station-input"),
-  entryMessage: document.getElementById("entry-message"),
-  stationTitle: document.getElementById("station-title"),
-  status: document.getElementById("status"),
-  cover: document.getElementById("cover"),
-  song: document.getElementById("song"),
-  playButton: document.getElementById("play-button"),
-  message: document.getElementById("message"),
-  audio: document.getElementById("audio"),
-  colorSettings: document.getElementById("color-settings")
-};
-
-const state = {
-  station: "",
-  stationLogo: "",
-  userPaused: false,
-  reconnectTimer: null,
-  songTimer: null,
-  songRequest: null,
-  watchdogTimer: null,
-  lastAudioTime: 0,
-  lastAudioProgressAt: 0,
-  hasPlayedOnce: false,
-  reconnecting: false,
-  reconnectAttempts: 0
-};
-
-// Watchdog prüft alle 2 Sekunden, ob die Audiowiedergabe vorankommt.
-const WATCHDOG_INTERVAL = 2000;
-// Erst nach 6 Sekunden ohne Fortschritt wird neu verbunden.
-const WATCHDOG_TIMEOUT = 6000;
-// Wiederholungsabstände: 1, 2, 4, 8 und maximal 15 Sekunden.
-const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 15000];
-
-function normalizeStation(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
-function isValidStation(value) {
-  return /^[a-z0-9_-]{1,80}$/.test(value);
-}
-
-function displayStationName(value) {
-  return value.replace(/[_-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-}
-
-function setStatus(label, live = false) {
-  elements.status.textContent = label;
-  elements.status.classList.toggle("live", live);
-}
-
-function updatePlayButton() {
-  const playing = !elements.audio.paused;
-  elements.playButton.textContent = playing
-    ? "❚❚ Wiedergabe pausieren"
-    : "▶ Wiedergabe starten";
-  elements.playButton.classList.toggle("playing", playing);
-}
-
-function showCover(url) {
-  const imageUrl = url || state.stationLogo;
-  if (!imageUrl) {
-    elements.cover.replaceChildren();
-    return;
-  }
-
-  const image = document.createElement("img");
-  image.alt = "";
-  image.src = imageUrl;
-  image.onerror = () => {
-    image.onerror = null;
-    if (state.stationLogo && imageUrl !== state.stationLogo) {
-      image.src = state.stationLogo;
-    } else {
-      elements.cover.replaceChildren();
-    }
-  };
-  elements.cover.replaceChildren(image);
-}
-
-function clearReconnect() {
-  if (state.reconnectTimer !== null) {
-    clearTimeout(state.reconnectTimer);
-    state.reconnectTimer = null;
-  }
-}
-
-function stopWatchdog() {
-  if (state.watchdogTimer !== null) {
-    clearInterval(state.watchdogTimer);
-    state.watchdogTimer = null;
-  }
-}
-
-function startWatchdog() {
-  stopWatchdog();
+  <script>  "use strict";  /* =========================================================    LAUT.FM PLAYER V3 TESTVERSION    Mit Audio-Watchdog und gestaffeltem Auto-Reconnect    ========================================================= */  const API_BASE = "https://api.laut.fm/station/"; const STREAM_BASE = "https://stream.laut.fm/"; const params = new URLSearchParams(window.location.search);  const elements = {   entryScreen: document.getElementById("entry-screen"),   playerScreen: document.getElementById("player-screen"),   form: document.getElementById("station-form"),   stationInput: document.getElementById("station-input"),   entryMessage: document.getElementById("entry-message"),   stationTitle: document.getElementById("station-title"),   status: document.getElementById("status"),   cover: document.getElementById("cover"),   song: document.getElementById("song"),   playButton: document.getElementById("play-button"),   message: document.getElementById("message"),   audio: document.getElementById("audio"),   colorSettings: document.getElementById("color-settings") };  const state = {   station: "",   stationLogo: "",   userPaused: false,   reconnectTimer: null,   songTimer: null,   songRequest: null,   watchdogTimer: null,   lastAudioTime: 0,   lastAudioProgressAt: 0,   hasPlayedOnce: false,   reconnecting: false,   reconnectAttempts: 0,   stationGeneration: 0 };  // Watchdog prüft alle 2 Sekunden, ob die Audiowiedergabe vorankommt.
+const WATCHDOG_INTERVAL = 2000; // Erst nach 6 Sekunden ohne Fortschritt wird neu verbunden.
+const WATCHDOG_TIMEOUT = 6000; // Wiederholungsabstände: 1, 2, 4, 8 und maximal 15 Sekunden.
+const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 15000];  function normalizeStation(value) {   return String(value || "").trim().toLowerCase(); }  function isValidStation(value) {   return /^[a-z0-9_-]{1,80}$/.test(value); }  function displayStationName(value) {   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase()); }  function setStatus(label, live = false) {   elements.status.textContent = label;   elements.status.classList.toggle("live", live); }  function updatePlayButton() {   const playing = !elements.audio.paused;   elements.playButton.textContent = playing     ? "❚❚ Wiedergabe pausieren"     : "▶ Wiedergabe starten";   elements.playButton.classList.toggle("playing", playing); }  function showCover(url) {   const imageUrl = url || state.stationLogo;   if (!imageUrl) {     elements.cover.replaceChildren();     return;   }    const image = document.createElement("img");   image.alt = "";   image.src = imageUrl;   image.onerror = () => {     image.onerror = null;     if (state.stationLogo && imageUrl !== state.stationLogo) {       image.src = state.stationLogo;     } else {       elements.cover.replaceChildren();     }   };   elements.cover.replaceChildren(image); }  function clearReconnect() {   if (state.reconnectTimer !== null) {     clearTimeout(state.reconnectTimer);     state.reconnectTimer = null;   } }  function stopWatchdog() {   if (state.watchdogTimer !== null) {     clearInterval(state.watchdogTimer);     state.watchdogTimer = null;   } }  function startWatchdog() {
+  // Mehrfache playing-Ereignisse setzen nur die Messbasis zurück.
+  // Ein bereits laufendes Intervall wird nicht neu angelegt.
   state.lastAudioTime = Number.isFinite(elements.audio.currentTime)
     ? elements.audio.currentTime : 0;
   state.lastAudioProgressAt = Date.now();
-  state.watchdogTimer = setInterval(checkAudioProgress, WATCHDOG_INTERVAL);
-}
-
-function stopTimers() {
-  clearReconnect();
-  stopWatchdog();
-  if (state.songTimer !== null) {
-    clearInterval(state.songTimer);
-    state.songTimer = null;
+  if (state.watchdogTimer === null) {
+    state.watchdogTimer = setInterval(checkAudioProgress, WATCHDOG_INTERVAL);
   }
 }
 
-function setAudioSource(station) {
-  let source = elements.audio.querySelector("source");
-  if (!source) {
-    source = document.createElement("source");
-    source.type = "audio/mpeg";
-    elements.audio.appendChild(source);
-  }
-  source.src = STREAM_BASE + encodeURIComponent(station);
-  elements.audio.load();
-}
-
-function scheduleReconnect(reason = "Stream unterbrochen", immediate = false) {
+function stopTimers() {   clearReconnect();   stopWatchdog();   if (state.songTimer !== null) {     clearInterval(state.songTimer);     state.songTimer = null;   } }  function setAudioSource(station) {   let source = elements.audio.querySelector("source");   if (!source) {     source = document.createElement("source");     source.type = "audio/mpeg";     elements.audio.appendChild(source);   }   source.src = STREAM_BASE + encodeURIComponent(station);   elements.audio.load(); }  function scheduleReconnect(reason = "Stream unterbrochen", immediate = false) {
   if (!state.station || state.userPaused || !state.hasPlayedOnce ||
       state.reconnectTimer !== null || state.reconnecting) return;
 
+  const generation = state.stationGeneration;
   const delay = immediate
     ? 1000
     : RECONNECT_DELAYS[Math.min(state.reconnectAttempts, RECONNECT_DELAYS.length - 1)];
@@ -661,7 +592,8 @@ function scheduleReconnect(reason = "Stream unterbrochen", immediate = false) {
 
   state.reconnectTimer = setTimeout(async () => {
     state.reconnectTimer = null;
-    if (!state.station || state.userPaused || state.reconnecting) return;
+    if (!state.station || state.userPaused || state.reconnecting ||
+        generation !== state.stationGeneration) return;
 
     const stationAtStart = state.station;
     state.reconnecting = true;
@@ -669,9 +601,10 @@ function scheduleReconnect(reason = "Stream unterbrochen", immediate = false) {
       elements.audio.pause();
       setAudioSource(stationAtStart);
       await elements.audio.play();
-      // Das playing-Event bestätigt den erfolgreichen Neustart und setzt
-      // den Watchdog sowie den Wiederholungszähler zurück.
+      if (generation !== state.stationGeneration) return;
+      // Das playing-Event bestätigt den erfolgreichen Neustart.
     } catch (error) {
+      if (generation !== state.stationGeneration) return;
       state.reconnecting = false;
       if (error && error.name === "NotAllowedError") {
         state.hasPlayedOnce = false;
@@ -687,33 +620,8 @@ function scheduleReconnect(reason = "Stream unterbrochen", immediate = false) {
   }, delay);
 }
 
-function checkAudioProgress() {
-  if (!state.station || state.userPaused || !state.hasPlayedOnce ||
-      state.reconnecting || state.reconnectTimer !== null || document.hidden) return;
-  if (elements.audio.paused || elements.audio.ended) return;
-
-  const currentTime = elements.audio.currentTime;
-  if (!Number.isFinite(currentTime)) return;
-  const now = Date.now();
-
-  if (currentTime > state.lastAudioTime + 0.1) {
-    state.lastAudioTime = currentTime;
-    state.lastAudioProgressAt = now;
-    return;
-  }
-
-  if (!state.lastAudioProgressAt) {
-    state.lastAudioTime = currentTime;
-    state.lastAudioProgressAt = now;
-    return;
-  }
-
-  if (now - state.lastAudioProgressAt >= WATCHDOG_TIMEOUT) {
-    scheduleReconnect("Audiostream liefert keinen Fortschritt", true);
-  }
-}
-
-async function loadStationInfo(station) {
+function checkAudioProgress() {   if (!state.station || state.userPaused || !state.hasPlayedOnce ||       state.reconnecting || state.reconnectTimer !== null || document.hidden) return;   if (elements.audio.paused || elements.audio.ended) return;    const currentTime = elements.audio.currentTime;   if (!Number.isFinite(currentTime)) return;   const now = Date.now();    if (currentTime > state.lastAudioTime + 0.1) {     state.lastAudioTime = currentTime;     state.lastAudioProgressAt = now;     return;   }    if (!state.lastAudioProgressAt) {     state.lastAudioTime = currentTime;     state.lastAudioProgressAt = now;     return;   }    if (now - state.lastAudioProgressAt >= WATCHDOG_TIMEOUT) {     scheduleReconnect("Audiostream liefert keinen Fortschritt", true);   } }  async function loadStationInfo(station) {
+  const generation = state.stationGeneration;
   try {
     const response = await fetch(API_BASE + encodeURIComponent(station), {
       cache: "no-store"
@@ -721,14 +629,11 @@ async function loadStationInfo(station) {
     if (!response.ok) throw new Error("Senderinformationen nicht verfügbar.");
 
     const data = await response.json();
-    if (station !== state.station) return;
+    if (station !== state.station || generation !== state.stationGeneration) return;
 
     const officialName = data.display_name || displayStationName(station);
     elements.stationTitle.textContent = officialName;
     document.title = officialName + " | laut.fm Player";
-
-    // Das offizielle Stationsbild aus der API bevorzugen. Falls es fehlt,
-    // bleibt die bereits gesetzte /images/logo-Adresse als Ersatz erhalten.
     state.stationLogo = (data.images && data.images.station)
       ? data.images.station
       : state.stationLogo;
@@ -741,24 +646,26 @@ async function loadStationInfo(station) {
 
 async function loadCurrentSong() {
   const station = state.station;
+  const generation = state.stationGeneration;
   if (!station) return;
 
   if (state.songRequest) state.songRequest.abort();
-  state.songRequest = new AbortController();
+  const request = new AbortController();
+  state.songRequest = request;
 
   try {
     const response = await fetch(
       API_BASE + encodeURIComponent(station) + "/current_song",
       {
         cache: "no-store",
-        signal: state.songRequest.signal
+        signal: request.signal
       }
     );
 
     if (!response.ok) throw new Error("Titelinformationen momentan nicht verfügbar.");
 
     const data = await response.json();
-    if (station !== state.station) return;
+    if (station !== state.station || generation !== state.stationGeneration) return;
 
     const artist = data.artist && data.artist.name ? data.artist.name : "";
     const title = data.title || "";
@@ -784,21 +691,12 @@ async function loadCurrentSong() {
     if (error.name !== "AbortError") {
       console.warn("Aktueller Titel konnte nicht geladen werden:", error);
     }
+  } finally {
+    if (state.songRequest === request) state.songRequest = null;
   }
 }
 
-function markPlaying() {
-  clearReconnect();
-  state.hasPlayedOnce = true;
-  state.reconnecting = false;
-  state.reconnectAttempts = 0;
-  startWatchdog();
-  setStatus("LIVE ON AIR", true);
-  elements.message.textContent = "";
-  updatePlayButton();
-}
-
-async function openStation(rawName) {
+function markPlaying() {   clearReconnect();   state.hasPlayedOnce = true;   state.reconnecting = false;   state.reconnectAttempts = 0;   startWatchdog();   setStatus("LIVE ON AIR", true);   elements.message.textContent = "";   updatePlayButton(); }  async function openStation(rawName) {
   const station = normalizeStation(rawName);
 
   if (!isValidStation(station)) {
@@ -808,13 +706,23 @@ async function openStation(rawName) {
     return;
   }
 
-  stopTimers();
-  state.hasPlayedOnce = false;
-  state.reconnecting = false;
-  state.reconnectAttempts = 0;
-  if (state.songRequest) state.songRequest.abort();
+  // Derselbe bereits geöffnete Sender wird nicht erneut initialisiert.
+  if (station === state.station && !elements.playerScreen.hidden) return;
 
-  if (station !== state.station) {
+  const stationChanged = station !== state.station;
+  if (stationChanged) {
+    state.stationGeneration += 1;
+    stopTimers();
+    state.hasPlayedOnce = false;
+    state.reconnecting = false;
+    state.reconnectAttempts = 0;
+    state.userPaused = false;
+    if (state.songRequest) {
+      state.songRequest.abort();
+      state.songRequest = null;
+    }
+
+    // Nur ein echter Senderwechsel darf die Audioquelle neu laden.
     elements.audio.pause();
     elements.audio.removeAttribute("src");
     elements.audio.querySelectorAll("source").forEach(source => source.remove());
@@ -824,9 +732,6 @@ async function openStation(rawName) {
 
   state.station = station;
   state.userPaused = false;
-
-  // Senderlogo sofort als Fallback-Adresse setzen und direkt laden,
-  // ohne auf die Antwort der Stations-API warten zu müssen.
   state.stationLogo = API_BASE + encodeURIComponent(station) + "/images/logo";
   showCover(state.stationLogo);
 
@@ -845,17 +750,22 @@ async function openStation(rawName) {
   pageUrl.searchParams.set("station", station);
   window.history.replaceState({}, "", pageUrl.toString());
 
-  /* Audio-Start direkt im Formular-Klick-Kontext */
-  setAudioSource(station);
-  const playAttempt = elements.audio.play();
-
-  if (playAttempt && typeof playAttempt.then === "function") {
-    playAttempt.then(markPlaying).catch(() => {
-      setStatus("START ERFORDERLICH");
-      elements.message.textContent =
-        "Zum Starten bitte auf „Wiedergabe starten“ tippen.";
-      updatePlayButton();
-    });
+  if (stationChanged) {
+    /* Audio-Start direkt im Formular-Klick-Kontext */
+    setAudioSource(station);
+    const playAttempt = elements.audio.play();
+    if (playAttempt && typeof playAttempt.then === "function") {
+      const generation = state.stationGeneration;
+      playAttempt.then(() => {
+        if (generation === state.stationGeneration) markPlaying();
+      }).catch(() => {
+        if (generation !== state.stationGeneration) return;
+        setStatus("START ERFORDERLICH");
+        elements.message.textContent =
+          "Zum Starten bitte auf „Wiedergabe starten“ tippen.";
+        updatePlayButton();
+      });
+    }
   }
 
   await Promise.all([
@@ -863,110 +773,34 @@ async function openStation(rawName) {
     loadCurrentSong()
   ]);
 
-  // Ein inzwischen ausgewählter anderer Sender darf keinen zweiten
-  // Titel-Abfrage-Timer des vorherigen Senders erhalten.
-  if (station !== state.station) return;
+  if (station !== state.station || state.songTimer !== null) return;
   state.songTimer = setInterval(loadCurrentSong, 15000);
 }
 
-elements.form.addEventListener("submit", event => {
-  event.preventDefault();
-  openStation(elements.stationInput.value);
-});
-
-elements.playButton.addEventListener("click", async () => {
-  if (!state.station) return;
-
-  if (!elements.audio.paused) {
-    state.userPaused = true;
-    clearReconnect();
-    stopWatchdog();
-    elements.audio.pause();
-    setStatus("PAUSIERT");
-    elements.message.textContent = "Wiedergabe pausiert.";
-    updatePlayButton();
-    return;
-  }
-
-  state.userPaused = false;
-  clearReconnect();
-
-  try {
-    if (!elements.audio.querySelector("source")) {
-      setAudioSource(state.station);
-    }
-    await elements.audio.play();
-    markPlaying();
-  } catch (error) {
-    setStatus("START NICHT MÖGLICH");
-    elements.message.textContent =
-      "Wiedergabe nicht möglich. Bitte erneut versuchen.";
-    updatePlayButton();
-  }
-});
-
-elements.audio.addEventListener("playing", markPlaying);
-elements.audio.addEventListener("play", updatePlayButton);
-
-elements.audio.addEventListener("pause", () => {
-  updatePlayButton();
-  if (!state.userPaused && state.hasPlayedOnce && !state.reconnecting) {
-    scheduleReconnect("Wiedergabe wurde unerwartet unterbrochen", true);
-  }
-});
-
-elements.audio.addEventListener("error", () => {
-  if (!state.userPaused) scheduleReconnect("Stream-Verbindung unterbrochen", true);
-});
-
-elements.audio.addEventListener("ended", () => {
-  if (!state.userPaused) scheduleReconnect("Stream wurde beendet", true);
-});
-
-elements.audio.addEventListener("stalled", () => {
-  if (!state.userPaused && state.hasPlayedOnce) {
-    scheduleReconnect("Stream liefert momentan keine Daten", true);
-  }
-});
-
-// Nach Rückkehr in den Tab die Fortschrittsmessung frisch starten.
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && !state.userPaused && state.hasPlayedOnce) {
-    state.lastAudioTime = Number.isFinite(elements.audio.currentTime)
-      ? elements.audio.currentTime : 0;
-    state.lastAudioProgressAt = Date.now();
-    checkAudioProgress();
-  }
-});
-
-window.addEventListener("pageshow", () => {
-  if (!document.hidden && !state.userPaused && state.hasPlayedOnce) {
-    state.lastAudioTime = Number.isFinite(elements.audio.currentTime)
-      ? elements.audio.currentTime : 0;
-    state.lastAudioProgressAt = Date.now();
-  }
-});
-
-/* =========================================================
-   FARBEN / WIDGET-EINSTELLUNGEN
-   ========================================================= */
-
-function validHex(value) {
-  return /^#[0-9a-f]{6}$/i.test(String(value || ""));
-}
-
-function colorFromUrl(key, fallback) {
-  const value = params.get(key);
-  return value && validHex("#" + value) ? "#" + value : fallback;
-}
+elements.form.addEventListener("submit", event => {   event.preventDefault();   openStation(elements.stationInput.value); });  elements.playButton.addEventListener("click", async () => {   if (!state.station) return;    if (!elements.audio.paused) {     state.userPaused = true;     clearReconnect();     stopWatchdog();     elements.audio.pause();     setStatus("PAUSIERT");     elements.message.textContent = "Wiedergabe pausiert.";     updatePlayButton();     return;   }    state.userPaused = false;   clearReconnect();    try {     if (!elements.audio.querySelector("source")) {       setAudioSource(state.station);     }     await elements.audio.play();     markPlaying();   } catch (error) {     setStatus("START NICHT MÖGLICH");     elements.message.textContent =       "Wiedergabe nicht möglich. Bitte erneut versuchen.";     updatePlayButton();   } });  elements.audio.addEventListener("playing", markPlaying); elements.audio.addEventListener("play", updatePlayButton);  elements.audio.addEventListener("pause", () => {   updatePlayButton();   if (!state.userPaused && state.hasPlayedOnce && !state.reconnecting) {     scheduleReconnect("Wiedergabe wurde unerwartet unterbrochen", true);   } });  elements.audio.addEventListener("error", () => {   if (!state.userPaused) scheduleReconnect("Stream-Verbindung unterbrochen", true); });  elements.audio.addEventListener("ended", () => {   if (!state.userPaused) scheduleReconnect("Stream wurde beendet", true); });  elements.audio.addEventListener("stalled", () => {   if (!state.userPaused && state.hasPlayedOnce) {     scheduleReconnect("Stream liefert momentan keine Daten", true);   } });  // Nach Rückkehr in den Tab die Fortschrittsmessung frisch starten.
+document.addEventListener("visibilitychange", () => {   if (!document.hidden && !state.userPaused && state.hasPlayedOnce) {     state.lastAudioTime = Number.isFinite(elements.audio.currentTime)       ? elements.audio.currentTime : 0;     state.lastAudioProgressAt = Date.now();     checkAudioProgress();   } });  window.addEventListener("pageshow", () => {   if (!document.hidden && !state.userPaused && state.hasPlayedOnce) {     state.lastAudioTime = Number.isFinite(elements.audio.currentTime)       ? elements.audio.currentTime : 0;     state.lastAudioProgressAt = Date.now();   } });  /* =========================================================    FARBEN / WIDGET-EINSTELLUNGEN    ========================================================= */  function validHex(value) {   return /^#[0-9a-f]{6}$/i.test(String(value || "")); }  function colorFromUrl(key, fallback) {   const value = params.get(key);   return value && validHex("#" + value) ? "#" + value : fallback; }  const colorInputs = {
+  accent: document.getElementById("accent-hex"),
+  background: document.getElementById("bg-hex"),
+  text: document.getElementById("text-hex"),
+  transparent: document.getElementById("transparent-bg")
+};
+const playerCards = document.querySelectorAll(".player");
+const colorPresetButtons = document.querySelectorAll(".color-preset");
+let lastAppliedColorKey = "";
+let colorApplyFrame = null;
 
 function applyColors() {
-  const accent = document.getElementById("accent-hex").value;
-  const background = document.getElementById("bg-hex").value;
-  const textColor = document.getElementById("text-hex").value;
-  const transparent = document.getElementById("transparent-bg").checked;
+  const accent = colorInputs.accent.value;
+  const background = colorInputs.background.value;
+  const textColor = colorInputs.text.value;
+  const transparent = colorInputs.transparent.checked;
 
   if (!validHex(accent) || !validHex(background) || !validHex(textColor)) return;
+
+  const colorKey = [accent.toLowerCase(), background.toLowerCase(),
+    textColor.toLowerCase(), transparent ? "1" : "0"].join("|");
+  if (colorKey === lastAppliedColorKey) return;
+  lastAppliedColorKey = colorKey;
 
   document.documentElement.style.setProperty("--accent", accent);
   document.documentElement.style.setProperty(
@@ -976,7 +810,7 @@ function applyColors() {
   document.documentElement.style.setProperty("--widget-bg", background);
   document.documentElement.style.setProperty("--text", textColor);
 
-  document.querySelectorAll(".player").forEach(card => {
+  playerCards.forEach(card => {
     card.style.background = transparent
       ? "transparent"
       : "color-mix(in srgb, " + background + " 82%, transparent)";
@@ -989,74 +823,14 @@ function applyColors() {
   document.body.style.background = transparent ? "transparent" : "";
 }
 
-function setupColorGenerator() {
-  const settings = [
-    ["accent", "#4d7cfe"],
-    ["bg", "#121a2f"],
-    ["text", "#f5f7fb"]
-  ];
-
-  settings.forEach(([key, fallback]) => {
-    const initial = colorFromUrl(key, fallback);
-    const picker = document.getElementById(key + "-picker");
-    const hex = document.getElementById(key + "-hex");
-
-    picker.value = initial;
-    hex.value = initial;
-
-    picker.addEventListener("input", () => {
-      hex.value = picker.value;
-      applyColors();
-    });
-
-    hex.addEventListener("input", () => {
-      if (validHex(hex.value)) {
-        picker.value = hex.value;
-        applyColors();
-      }
-    });
-
-    hex.addEventListener("change", () => {
-      if (!validHex(hex.value)) hex.value = fallback;
-      picker.value = hex.value;
-      applyColors();
-    });
+function queueApplyColors() {
+  if (colorApplyFrame !== null) return;
+  colorApplyFrame = requestAnimationFrame(() => {
+    colorApplyFrame = null;
+    applyColors();
   });
-
-  document.querySelectorAll(".color-preset").forEach(button => {
-    button.addEventListener("click", () => {
-      const color = button.dataset.color;
-      document.getElementById("accent-picker").value = color;
-      document.getElementById("accent-hex").value = color;
-
-      document.querySelectorAll(".color-preset").forEach(item => {
-        item.setAttribute("aria-pressed", String(item === button));
-      });
-
-      applyColors();
-    });
-  });
-
-  const transparent = document.getElementById("transparent-bg");
-  transparent.checked = params.get("transparent") === "1";
-  transparent.addEventListener("change", applyColors);
-  applyColors();
 }
 
-setupColorGenerator();
-
-/* Direkter Aufruf eines Senders über ?station=stationsname
-   Beim Neuladen wie im ursprünglichen Player erst nach window.load starten. */
-const initialStation = params.get("station");
-if (initialStation) {
-  elements.stationInput.value = initialStation;
-  if (elements.colorSettings) elements.colorSettings.hidden = true;
-
-  window.addEventListener("load", () => {
-    openStation(initialStation);
-  }, { once: true });
-}
-
-</script>
-  </body>
-  </html> 
+function setupColorGenerator() {   const settings = [     ["accent", "#4d7cfe"],     ["bg", "#121a2f"],     ["text", "#f5f7fb"]   ];    settings.forEach(([key, fallback]) => {     const initial = colorFromUrl(key, fallback);     const picker = document.getElementById(key + "-picker");     const hex = document.getElementById(key + "-hex");      picker.value = initial;     hex.value = initial;      picker.addEventListener("input", () => {       hex.value = picker.value;       queueApplyColors();     });      hex.addEventListener("input", () => {       if (validHex(hex.value)) {         picker.value = hex.value;         queueApplyColors();       }     });      hex.addEventListener("change", () => {       if (!validHex(hex.value)) hex.value = fallback;       picker.value = hex.value;       queueApplyColors();     });   });    colorPresetButtons.forEach(button => {     button.addEventListener("click", () => {       const color = button.dataset.color;       document.getElementById("accent-picker").value = color;       document.getElementById("accent-hex").value = color;        colorPresetButtons.forEach(item => {         item.setAttribute("aria-pressed", String(item === button));       });        queueApplyColors();     });   });    const transparent = document.getElementById("transparent-bg");   transparent.checked = params.get("transparent") === "1";   transparent.addEventListener("change", queueApplyColors);   queueApplyColors(); }  setupColorGenerator();  /* Direkter Aufruf eines Senders über ?station=stationsname    Beim Neuladen wie im ursprünglichen Player erst nach window.load starten. */ const initialStation = params.get("station"); if (initialStation) {   elements.stationInput.value = initialStation;   if (elements.colorSettings) elements.colorSettings.hidden = true;    window.addEventListener("load", () => {     openStation(initialStation);   }, { once: true }); }  </script>
+ </body>
+</html>
