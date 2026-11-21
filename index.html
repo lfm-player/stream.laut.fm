@@ -799,9 +799,20 @@ function applyColors() {
   // Farben in der URL speichern
 const pageUrl = new URL(window.location.href);
 
-pageUrl.searchParams.set("accent", accent.slice(1));
-pageUrl.searchParams.set("bg", background.slice(1));
-pageUrl.searchParams.set("text", textColor.slice(1));
+if (
+  accent.toLowerCase() === "#4d7cfe" &&
+  background.toLowerCase() === "#121a2f" &&
+  textColor.toLowerCase() === "#f5f7fb" &&
+  !transparent
+) {
+  pageUrl.searchParams.delete("accent");
+  pageUrl.searchParams.delete("bg");
+  pageUrl.searchParams.delete("text");
+} else {
+  pageUrl.searchParams.set("accent", accent.slice(1));
+  pageUrl.searchParams.set("bg", background.slice(1));
+  pageUrl.searchParams.set("text", textColor.slice(1));
+}
 
 if (transparent) {
   pageUrl.searchParams.set("transparent", "1");
