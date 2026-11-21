@@ -797,7 +797,22 @@ function applyColors() {
 
   if (!validHex(accent) || !validHex(background) || !validHex(textColor)) return;
 
-  const colorKey = [accent.toLowerCase(), background.toLowerCase(),
+  // Farben in der URL speichern
+const pageUrl = new URL(window.location.href);
+
+pageUrl.searchParams.set("accent", accent.slice(1));
+pageUrl.searchParams.set("bg", background.slice(1));
+pageUrl.searchParams.set("text", textColor.slice(1));
+
+if (transparent) {
+  pageUrl.searchParams.set("transparent", "1");
+} else {
+  pageUrl.searchParams.delete("transparent");
+}
+
+window.history.replaceState({}, "", pageUrl.toString());
+ 
+ const colorKey = [accent.toLowerCase(), background.toLowerCase(),
     textColor.toLowerCase(), transparent ? "1" : "0"].join("|");
   if (colorKey === lastAppliedColorKey) return;
   lastAppliedColorKey = colorKey;
