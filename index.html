@@ -6,7 +6,7 @@
   <meta content="#0b1120" name="theme-color"/>
   <meta content="Universeller laut.fm Webplayer V3" name="description"/>
   <title>
-   laut.fm Player
+   Webplayer
   </title>
   <link href="favicon.ico" rel="icon" type="image/x-icon"/>
   <!-- Hintergrund sofort beim Laden festlegen -->
@@ -540,7 +540,7 @@ html, body {
    </section>
    <section aria-label="laut.fm Webplayer" class="player" hidden="" id="player-screen">
     <h1 class="brand" id="station-title">
-     Shout-FM
+     Dein Sender
     </h1>
     <div class="status live" id="status">
      LIVE ON AIR
@@ -633,7 +633,7 @@ function checkAudioProgress() {   if (!state.station || state.userPaused || !sta
 
     const officialName = data.display_name || displayStationName(station);
     elements.stationTitle.textContent = officialName;
-    document.title = officialName + " | laut.fm Player";
+    document.title = officialName + " | Webplayer";
     state.stationLogo = (data.images && data.images.station)
       ? data.images.station
       : state.stationLogo;
