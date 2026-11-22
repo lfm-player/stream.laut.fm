@@ -277,14 +277,6 @@ html, body {
      text-decoration:underline;
     
     }
- .footnote {
-     margin:16px 8px 0;
-     color:#78869d;
-     text-align:center;
-     font-size:.72rem;
-     line-height:1.5;
-    
-    }
  .generator {
      margin-top:18px;
      padding-top:16px;
@@ -557,9 +549,6 @@ html, body {
     <audio id="audio" playsinline="" preload="none">
     </audio>
    </section>
-   <p class="footnote">
-    Stream, Senderinformationen und Cover werden von laut.fm bereitgestellt.
-   </p>
   </main>
   <script>  "use strict";  /* =========================================================    LAUT.FM PLAYER V3 TESTVERSION    Mit Audio-Watchdog und gestaffeltem Auto-Reconnect    ========================================================= */  const API_BASE = "https://api.laut.fm/station/"; const STREAM_BASE = "https://stream.laut.fm/"; const params = new URLSearchParams(window.location.search);  const elements = {   entryScreen: document.getElementById("entry-screen"),   playerScreen: document.getElementById("player-screen"),   form: document.getElementById("station-form"),   stationInput: document.getElementById("station-input"),   entryMessage: document.getElementById("entry-message"),   stationTitle: document.getElementById("station-title"),   status: document.getElementById("status"),   cover: document.getElementById("cover"),   song: document.getElementById("song"),   playButton: document.getElementById("play-button"),   message: document.getElementById("message"),   audio: document.getElementById("audio"),   colorSettings: document.getElementById("color-settings") };  const state = {   station: "",   stationLogo: "",   userPaused: false,   reconnectTimer: null,   songTimer: null,   songRequest: null,   watchdogTimer: null,   lastAudioTime: 0,   lastAudioProgressAt: 0,   hasPlayedOnce: false,   reconnecting: false,   reconnectAttempts: 0,   stationGeneration: 0 };  // Watchdog prüft alle 2 Sekunden, ob die Audiowiedergabe vorankommt.
 const WATCHDOG_INTERVAL = 2000; // Erst nach 6 Sekunden ohne Fortschritt wird neu verbunden.
