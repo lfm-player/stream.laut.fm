@@ -550,65 +550,50 @@ html, body {
     </audio>
    </section>
   </main>
-  <script>  "use strict";  /* =========================================================    LAUT.FM PLAYER V3 Mit Audio-Watchdog und gestaffeltem Auto-Reconnect    ========================================================= */  const API_BASE = "https://api.laut.fm/station/"; const STREAM_BASE = "https://stream.laut.fm/"; const params = new URLSearchParams(window.location.search);  const elements = {   entryScreen: document.getElementById("entry-screen"),   playerScreen: document.getElementById("player-screen"),   form: document.getElementById("station-form"),   stationInput: document.getElementById("station-input"),   entryMessage: document.getElementById("entry-message"),   stationTitle: document.getElementById("station-title"),   status: document.getElementById("status"),   cover: document.getElementById("cover"),   song: document.getElementById("song"),   playButton: document.getElementById("play-button"),   message: document.getElementById("message"),   audio: document.getElementById("audio"),   colorSettings: document.getElementById("color-settings") };  const state = {   station: "",   stationLogo: "",   userPaused: false,   reconnectTimer: null,   songTimer: null,   songRequest: null,   watchdogTimer: null,   lastAudioTime: 0,   lastAudioProgressAt: 0,   hasPlayedOnce: false,   reconnecting: false,   reconnectAttempts: 0,   stationGeneration: 0 };  // Watchdog prüft alle 2 Sekunden, ob die Audiowiedergabe vorankommt.
-const WATCHDOG_INTERVAL = 4000; // Erst nach 6 Sekunden ohne Fortschritt wird neu verbunden.
-const WATCHDOG_TIMEOUT = 6000; // Wiederholungsabstände: 1, 2, 3 und maximal 4 Sekunden.
-const RECONNECT_DELAYS = [500, 1000, 2000, 3000, 4000];  function normalizeStation(value) {   return String(value || "").trim().toLowerCase(); }  function isValidStation(value) {   return /^[a-z0-9_-]{1,80}$/.test(value); }  function displayStationName(value) {   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase()); }  function setStatus(label, live = false) {   elements.status.textContent = label;   elements.status.classList.toggle("live", live); }  function updatePlayButton() {   const playing = !elements.audio.paused;   elements.playButton.textContent = playing     ? "❚❚ Wiedergabe pausieren"     : "▶ Wiedergabe starten";   elements.playButton.classList.toggle("playing", playing); }  function showCover(url) {   const imageUrl = url || state.stationLogo;   if (!imageUrl) {     elements.cover.replaceChildren();     return;   }    const image = document.createElement("img");   image.alt = "";   image.src = imageUrl;   image.onerror = () => {     image.onerror = null;     if (state.stationLogo && imageUrl !== state.stationLogo) {       image.src = state.stationLogo;     } else {       elements.cover.replaceChildren();     }   };   elements.cover.replaceChildren(image); }  function clearReconnect() {   if (state.reconnectTimer !== null) {     clearTimeout(state.reconnectTimer);     state.reconnectTimer = null;   } }  function stopWatchdog() {   if (state.watchdogTimer !== null) {     clearInterval(state.watchdogTimer);     state.watchdogTimer = null;   } }  function startWatchdog() {
-  // Mehrfache playing-Ereignisse setzen nur die Messbasis zurück.
-  // Ein bereits laufendes Intervall wird nicht neu angelegt.
-  state.lastAudioTime = Number.isFinite(elements.audio.currentTime)
-    ? elements.audio.currentTime : 0;
-  state.lastAudioProgressAt = Date.now();
-  if (state.watchdogTimer === null) {
-    state.watchdogTimer = setInterval(checkAudioProgress, WATCHDOG_INTERVAL);
-  }
-}
-
-function stopTimers() {   clearReconnect();   stopWatchdog();   if (state.songTimer !== null) {     clearInterval(state.songTimer);     state.songTimer = null;   } }  function setAudioSource(station) {   let source = elements.audio.querySelector("source");   if (!source) {     source = document.createElement("source");     source.type = "audio/mpeg";     elements.audio.appendChild(source);   }   source.src = STREAM_BASE + encodeURIComponent(station);   elements.audio.load(); }  function scheduleReconnect(reason = "Stream unterbrochen", immediate = false) {
+  <script>  "use strict";  /* =========================================================    LAUT.FM PLAYER V3 Mit ereignisbasiertem Auto-Reconnect ohne Watchdog    ========================================================= */  const API_BASE = "https://api.laut.fm/station/"; const STREAM_BASE = "https://stream.laut.fm/"; const params = new URLSearchParams(window.location.search);  const elements = {   entryScreen: document.getElementById("entry-screen"),   playerScreen: document.getElementById("player-screen"),   form: document.getElementById("station-form"),   stationInput: document.getElementById("station-input"),   entryMessage: document.getElementById("entry-message"),   stationTitle: document.getElementById("station-title"),   status: document.getElementById("status"),   cover: document.getElementById("cover"),   song: document.getElementById("song"),   playButton: document.getElementById("play-button"),   message: document.getElementById("message"),   audio: document.getElementById("audio"),   colorSettings: document.getElementById("color-settings") };  const state = {   station: "",   stationLogo: "",   userPaused: false,   reconnectTimer: null,   songTimer: null,   songRequest: null,   hasPlayedOnce: false,   reconnecting: false,   stationGeneration: 0 };  const RECONNECT_DELAY = 2000;  function normalizeStation(value) {   return String(value || "").trim().toLowerCase(); }  function isValidStation(value) {   return /^[a-z0-9_-]{1,80}$/.test(value); }  function displayStationName(value) {   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase()); }  function setStatus(label, live = false) {   elements.status.textContent = label;   elements.status.classList.toggle("live", live); }  function updatePlayButton() {   const playing = !elements.audio.paused;   elements.playButton.textContent = playing     ? "❚❚ Wiedergabe pausieren"     : "▶ Wiedergabe starten";   elements.playButton.classList.toggle("playing", playing); }  function showCover(url) {   const imageUrl = url || state.stationLogo;   if (!imageUrl) {     elements.cover.replaceChildren();     return;   }    const image = document.createElement("img");   image.alt = "";   image.src = imageUrl;   image.onerror = () => {     image.onerror = null;     if (state.stationLogo && imageUrl !== state.stationLogo) {       image.src = state.stationLogo;     } else {       elements.cover.replaceChildren();     }   };   elements.cover.replaceChildren(image); }  function clearReconnect() {   if (state.reconnectTimer !== null) {     clearTimeout(state.reconnectTimer);     state.reconnectTimer = null;   } }  function stopTimers() {   clearReconnect();   if (state.songTimer !== null) {     clearInterval(state.songTimer);     state.songTimer = null;   } }  function setAudioSource(station) {   let source = elements.audio.querySelector("source");   if (!source) {     source = document.createElement("source");     source.type = "audio/mpeg";     elements.audio.appendChild(source);   }   source.src = STREAM_BASE + encodeURIComponent(station);   elements.audio.load(); }  function scheduleReconnect(reason = "Stream unterbrochen") {
   if (!state.station || state.userPaused || !state.hasPlayedOnce ||
       state.reconnectTimer !== null || state.reconnecting) return;
 
   const generation = state.stationGeneration;
-  const delay = immediate
-    ? 1000
-    : RECONNECT_DELAYS[Math.min(state.reconnectAttempts, RECONNECT_DELAYS.length - 1)];
-  state.reconnectAttempts = Math.min(state.reconnectAttempts + 1, RECONNECT_DELAYS.length - 1);
+  const stationAtStart = state.station;
 
   setStatus("VERBINDUNG WIRD NEU AUFGEBAUT");
-  elements.message.textContent = reason + " – automatischer Neustart in " +
-    Math.ceil(delay / 1000) + " Sekunde" + (delay === 1000 ? "" : "n") + ".";
+  elements.message.textContent =
+    reason + " – neuer Verbindungsversuch in 2 Sekunden.";
 
   state.reconnectTimer = setTimeout(async () => {
     state.reconnectTimer = null;
-    if (!state.station || state.userPaused || state.reconnecting ||
-        generation !== state.stationGeneration) return;
 
-    const stationAtStart = state.station;
+    if (!state.station || state.userPaused ||
+        generation !== state.stationGeneration ||
+        stationAtStart !== state.station) return;
+
     state.reconnecting = true;
+
     try {
       elements.audio.pause();
       setAudioSource(stationAtStart);
       await elements.audio.play();
-      if (generation !== state.stationGeneration) return;
-      // Das playing-Event bestätigt den erfolgreichen Neustart.
+      // Das playing-Ereignis bestätigt den erfolgreichen Neustart.
     } catch (error) {
       if (generation !== state.stationGeneration) return;
+
       state.reconnecting = false;
+
       if (error && error.name === "NotAllowedError") {
         state.hasPlayedOnce = false;
-        stopWatchdog();
         setStatus("START ERFORDERLICH");
         elements.message.textContent =
           "Der Browser blockiert den automatischen Neustart. Bitte die Wiedergabe erneut starten.";
         updatePlayButton();
       } else if (!state.userPaused && stationAtStart === state.station) {
-        scheduleReconnect("Verbindung fehlgeschlagen – neuer Versuch", false);
+        scheduleReconnect("Verbindung fehlgeschlagen");
       }
     }
-  }, delay);
+  }, RECONNECT_DELAY);
 }
 
-function checkAudioProgress() {   if (!state.station || state.userPaused || !state.hasPlayedOnce ||       state.reconnecting || state.reconnectTimer !== null || document.hidden) return;   if (elements.audio.paused || elements.audio.ended) return;    const currentTime = elements.audio.currentTime;   if (!Number.isFinite(currentTime)) return;   const now = Date.now();    if (currentTime > state.lastAudioTime + 0.1) {     state.lastAudioTime = currentTime;     state.lastAudioProgressAt = now;     return;   }    if (!state.lastAudioProgressAt) {     state.lastAudioTime = currentTime;     state.lastAudioProgressAt = now;     return;   }    if (now - state.lastAudioProgressAt >= WATCHDOG_TIMEOUT) {     scheduleReconnect("Audiostream liefert keinen Fortschritt", true);   } }  async function loadStationInfo(station) {
+async function loadStationInfo(station) {
   const generation = state.stationGeneration;
   try {
     const response = await fetch(API_BASE + encodeURIComponent(station), {
@@ -684,7 +669,7 @@ async function loadCurrentSong() {
   }
 }
 
-function markPlaying() {   clearReconnect();   state.hasPlayedOnce = true;   state.reconnecting = false;   state.reconnectAttempts = 0;   startWatchdog();   setStatus("LIVE ON AIR", true);   elements.message.textContent = "";   updatePlayButton(); }  async function openStation(rawName) {
+function markPlaying() {   clearReconnect();   state.hasPlayedOnce = true;   state.reconnecting = false;   setStatus("LIVE ON AIR", true);   elements.message.textContent = "";   updatePlayButton(); }  async function openStation(rawName) {
   const station = normalizeStation(rawName);
 
   if (!isValidStation(station)) {
@@ -703,7 +688,7 @@ function markPlaying() {   clearReconnect();   state.hasPlayedOnce = true;   sta
     stopTimers();
     state.hasPlayedOnce = false;
     state.reconnecting = false;
-    state.reconnectAttempts = 0;
+ 
     state.userPaused = false;
     if (state.songRequest) {
       state.songRequest.abort();
@@ -765,8 +750,7 @@ function markPlaying() {   clearReconnect();   state.hasPlayedOnce = true;   sta
   state.songTimer = setInterval(loadCurrentSong, 15000);
 }
 
-elements.form.addEventListener("submit", event => {   event.preventDefault();   openStation(elements.stationInput.value); });  elements.playButton.addEventListener("click", async () => {   if (!state.station) return;    if (!elements.audio.paused) {     state.userPaused = true;     clearReconnect();     stopWatchdog();     elements.audio.pause();     setStatus("PAUSIERT");     elements.message.textContent = "Wiedergabe pausiert.";     updatePlayButton();     return;   }    state.userPaused = false;   clearReconnect();    try {     if (!elements.audio.querySelector("source")) {       setAudioSource(state.station);     }     await elements.audio.play();     markPlaying();   } catch (error) {     setStatus("START NICHT MÖGLICH");     elements.message.textContent =       "Wiedergabe nicht möglich. Bitte erneut versuchen.";     updatePlayButton();   } });  elements.audio.addEventListener("playing", markPlaying); elements.audio.addEventListener("play", updatePlayButton);  elements.audio.addEventListener("pause", () => {   updatePlayButton();   if (!state.userPaused && state.hasPlayedOnce && !state.reconnecting) {     scheduleReconnect("Wiedergabe wurde unerwartet unterbrochen", true);   } });  elements.audio.addEventListener("error", () => {   if (!state.userPaused) scheduleReconnect("Stream-Verbindung unterbrochen", true); });  elements.audio.addEventListener("ended", () => {   if (!state.userPaused) scheduleReconnect("Stream wurde beendet", true); });  elements.audio.addEventListener("stalled", () => {   if (!state.userPaused && state.hasPlayedOnce) {     scheduleReconnect("Stream liefert momentan keine Daten", true);   } });  // Nach Rückkehr in den Tab die Fortschrittsmessung frisch starten.
-document.addEventListener("visibilitychange", () => {   if (!document.hidden && !state.userPaused && state.hasPlayedOnce) {     state.lastAudioTime = Number.isFinite(elements.audio.currentTime)       ? elements.audio.currentTime : 0;     state.lastAudioProgressAt = Date.now();     checkAudioProgress();   } });  window.addEventListener("pageshow", () => {   if (!document.hidden && !state.userPaused && state.hasPlayedOnce) {     state.lastAudioTime = Number.isFinite(elements.audio.currentTime)       ? elements.audio.currentTime : 0;     state.lastAudioProgressAt = Date.now();   } });  /* =========================================================    FARBEN / WIDGET-EINSTELLUNGEN    ========================================================= */  function validHex(value) {   return /^#[0-9a-f]{6}$/i.test(String(value || "")); }  function colorFromUrl(key, fallback) {   const value = params.get(key);   return value && validHex("#" + value) ? "#" + value : fallback; }  const colorInputs = {
+elements.form.addEventListener("submit", event => {   event.preventDefault();   openStation(elements.stationInput.value); });  elements.playButton.addEventListener("click", async () => {   if (!state.station) return;    if (!elements.audio.paused) {     state.userPaused = true;     clearReconnect();     elements.audio.pause();     setStatus("PAUSIERT");     elements.message.textContent = "Wiedergabe pausiert.";     updatePlayButton();     return;   }    state.userPaused = false;   clearReconnect();    try {     if (!elements.audio.querySelector("source")) {       setAudioSource(state.station);     }     await elements.audio.play();     markPlaying();   } catch (error) {     setStatus("START NICHT MÖGLICH");     elements.message.textContent =       "Wiedergabe nicht möglich. Bitte erneut versuchen.";     updatePlayButton();   } });  elements.audio.addEventListener("playing", markPlaying); elements.audio.addEventListener("play", updatePlayButton);  elements.audio.addEventListener("pause", () => {   updatePlayButton();   if (!state.userPaused && state.hasPlayedOnce && !state.reconnecting) {     scheduleReconnect("Wiedergabe wurde unerwartet unterbrochen");   } });  elements.audio.addEventListener("error", () => {   if (!state.userPaused) scheduleReconnect("Stream-Verbindung unterbrochen"); });  elements.audio.addEventListener("ended", () => {   if (!state.userPaused) scheduleReconnect("Stream wurde beendet"); });  elements.audio.addEventListener("stalled", () => {   if (!state.userPaused && state.hasPlayedOnce) {     scheduleReconnect("Stream liefert momentan keine Daten");   } });  /* =========================================================    FARBEN / WIDGET-EINSTELLUNGEN    ========================================================= */  function validHex(value) {   return /^#[0-9a-f]{6}$/i.test(String(value || "")); }  function colorFromUrl(key, fallback) {   const value = params.get(key);   return value && validHex("#" + value) ? "#" + value : fallback; }  const colorInputs = {
   accent: document.getElementById("accent-hex"),
   background: document.getElementById("bg-hex"),
   text: document.getElementById("text-hex"),
