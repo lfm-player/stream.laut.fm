@@ -19,7 +19,7 @@ Die Verwendung erfolgt auf eigene Gefahr!
 - **Senderlogo als Ersatz:** Wenn kein passendes Songbild vorhanden ist, wird das Logo des ausgewählten Senders verwendet.
 - **Direkte Stream-Wiedergabe:** Verbindung zum jeweiligen laut.fm-Audiostream.
 - **Automatischer Wiedergabeversuch:** Der Player versucht nach dem Öffnen eines Senders die Wiedergabe zu starten. Die Autoplay-Regeln des Browsers können einen manuellen Start erforderlich machen.
-- **Automatischer Reconnect:** Erkennt unerwartete Stream-Unterbrechungen und versucht automatisch, die Verbindung wiederherzustellen. Eine zusätzliche Stream-Überwachung erkennt auch ausbleibenden Audiofortschritt.
+- **Automatischer Reconnect:** Erkennt unerwartete Stream-Unterbrechungen und versucht automatisch, die Verbindung wiederherzustellen.
 - **Play/Pause:** Die Wiedergabe lässt sich bequem steuern. Eine manuelle Pause verhindert die automatische Wiederaufnahme.
 - **Dynamischer Browser-Titel:** Der offizielle Sendername wird mit „| Webplayer“ kombiniert.
 - **Responsives Design:** Optimiert für Desktop, Tablet und Smartphone.
