@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <meta content="#0b1120" name="theme-color"/>
-  <meta content="Universeller laut.fm Webplayer V3" name="description"/>
+  <meta content="Universeller laut.fm Webplayer V4" name="description"/>
   <title>
    Webplayer
   </title>
@@ -546,83 +546,210 @@ html, body {
     </button>
     <p aria-live="polite" class="message" id="message" role="status">
     </p>
-    <audio id="audio" playsinline="" preload="none">
-    </audio>
    </section>
   </main>
-  <script>  "use strict";  /* =========================================================    LAUT.FM PLAYER V3 Mit ereignisbasiertem Auto-Reconnect    ========================================================= */  const API_BASE = "https://api.laut.fm/station/"; const STREAM_BASE = "https://stream.laut.fm/"; const params = new URLSearchParams(window.location.search);  const elements = {   entryScreen: document.getElementById("entry-screen"),   playerScreen: document.getElementById("player-screen"),   form: document.getElementById("station-form"),   stationInput: document.getElementById("station-input"),   entryMessage: document.getElementById("entry-message"),   stationTitle: document.getElementById("station-title"),   status: document.getElementById("status"),   cover: document.getElementById("cover"),   song: document.getElementById("song"),   playButton: document.getElementById("play-button"),   message: document.getElementById("message"),   audio: document.getElementById("audio"),   colorSettings: document.getElementById("color-settings") };  const state = {   station: "",   stationLogo: "",   userPaused: false,   reconnectTimer: null,   songTimer: null,   songRequest: null,   hasPlayedOnce: false,   reconnecting: false,   stationGeneration: 0 };  const RECONNECT_DELAY = 2000;  function normalizeStation(value) {   return String(value || "").trim().toLowerCase(); }  function isValidStation(value) {   return /^[a-z0-9_-]{1,80}$/.test(value); }  function displayStationName(value) {   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase()); }  function setStatus(label, live = false) {   elements.status.textContent = label;   elements.status.classList.toggle("live", live); }  function updatePlayButton() {   const playing = !elements.audio.paused;   elements.playButton.textContent = playing     ? "❚❚ Wiedergabe pausieren"     : "▶ Wiedergabe starten";   elements.playButton.classList.toggle("playing", playing); }  function showCover(url) {   const imageUrl = url || state.stationLogo;   if (!imageUrl) {     elements.cover.replaceChildren();     return;   }    const image = document.createElement("img");   image.alt = "";   image.src = imageUrl;   image.onerror = () => {     image.onerror = null;     if (state.stationLogo && imageUrl !== state.stationLogo) {       image.src = state.stationLogo;     } else {       elements.cover.replaceChildren();     }   };   elements.cover.replaceChildren(image); }  function clearReconnect() {   if (state.reconnectTimer !== null) {     clearTimeout(state.reconnectTimer);     state.reconnectTimer = null;   } }  function stopTimers() {   clearReconnect();   if (state.songTimer !== null) {     clearInterval(state.songTimer);     state.songTimer = null;   } }  function setAudioSource(station) {   let source = elements.audio.querySelector("source");   if (!source) {     source = document.createElement("source");     source.type = "audio/mpeg";     elements.audio.appendChild(source);   }   source.src = STREAM_BASE + encodeURIComponent(station);   elements.audio.load(); }  function scheduleReconnect(reason = "Stream unterbrochen") {
-  if (!state.station || state.userPaused || !state.hasPlayedOnce ||
-      state.reconnectTimer !== null || state.reconnecting) return;
+  <script>
+"use strict";
+
+/* =========================================================
+   SHOUT-FM UNIVERSAL LAUT.FM PLAYER V4
+   Native Audio() + laut.fm Stations-API
+   Titelaktualisierung anhand von ends_at
+   ========================================================= */
+
+const API_BASE = "https://api.laut.fm/station/";
+const params = new URLSearchParams(window.location.search);
+
+const elements = {
+  entryScreen: document.getElementById("entry-screen"),
+  playerScreen: document.getElementById("player-screen"),
+  form: document.getElementById("station-form"),
+  stationInput: document.getElementById("station-input"),
+  entryMessage: document.getElementById("entry-message"),
+  stationTitle: document.getElementById("station-title"),
+  status: document.getElementById("status"),
+  cover: document.getElementById("cover"),
+  song: document.getElementById("song"),
+  playButton: document.getElementById("play-button"),
+  message: document.getElementById("message"),
+  colorSettings: document.getElementById("color-settings")
+};
+
+/* Native HTML5-Audioinstanz wie beim regulären Lplayer-Modus. */
+const audio = new Audio();
+audio.preload = "none";
+audio.playsInline = true;
+
+const state = {
+  station: "",
+  streamUrl: "",
+  stationLogo: "",
+  userPaused: false,
+  songTimer: null,
+  songRequest: null,
+  stationGeneration: 0
+};
+
+function normalizeStation(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isValidStation(value) {
+  return /^[a-z0-9_-]{1,80}$/.test(value);
+}
+
+function displayStationName(value) {
+  return value.replace(/[_-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function setStatus(label, live = false) {
+  elements.status.textContent = label;
+  elements.status.classList.toggle("live", live);
+}
+
+function updatePlayButton() {
+  const playing = !audio.paused && !audio.ended;
+  elements.playButton.textContent = playing
+    ? "❚❚ Wiedergabe pausieren"
+    : "▶ Wiedergabe starten";
+  elements.playButton.classList.toggle("playing", playing);
+}
+
+function showCover(url) {
+  const imageUrl = url || state.stationLogo;
+
+  if (!imageUrl) {
+    elements.cover.replaceChildren();
+    return;
+  }
+
+  const image = document.createElement("img");
+  image.alt = "";
+  image.src = imageUrl;
+
+  image.onerror = () => {
+    image.onerror = null;
+
+    if (state.stationLogo && imageUrl !== state.stationLogo) {
+      image.src = state.stationLogo;
+    } else {
+      elements.cover.replaceChildren();
+    }
+  };
+
+  elements.cover.replaceChildren(image);
+}
+
+function clearSongTimer() {
+  if (state.songTimer !== null) {
+    clearTimeout(state.songTimer);
+    state.songTimer = null;
+  }
+}
+
+function stopStationTasks() {
+  clearSongTimer();
+
+  if (state.songRequest) {
+    state.songRequest.abort();
+    state.songRequest = null;
+  }
+}
+
+function scheduleSongRefresh(endsAt) {
+  clearSongTimer();
+
+  let delay = 10000;
+
+  if (endsAt) {
+    const endTime = new Date(endsAt).getTime();
+
+    if (Number.isFinite(endTime)) {
+      delay = endTime - Date.now() + 300;
+
+      /* Bei fehlenden/zu nahen Zeitangaben nicht in kurzen
+         Schleifen die API abfragen. */
+      if (delay < 3000) delay = 10000;
+    }
+  }
 
   const generation = state.stationGeneration;
-  const stationAtStart = state.station;
 
-  setStatus("VERBINDUNG WIRD NEU AUFGEBAUT");
-  elements.message.textContent =
-    reason + " – neuer Verbindungsversuch in 2 Sekunden.";
-
-  state.reconnectTimer = setTimeout(async () => {
-    state.reconnectTimer = null;
-
-    if (!state.station || state.userPaused ||
-        generation !== state.stationGeneration ||
-        stationAtStart !== state.station) return;
-
-    state.reconnecting = true;
-
-    try {
-      elements.audio.pause();
-      setAudioSource(stationAtStart);
-      await elements.audio.play();
-      // Das playing-Ereignis bestätigt den erfolgreichen Neustart.
-    } catch (error) {
-      if (generation !== state.stationGeneration) return;
-
-      state.reconnecting = false;
-
-      if (error && error.name === "NotAllowedError") {
-        state.hasPlayedOnce = false;
-        setStatus("START ERFORDERLICH");
-        elements.message.textContent =
-          "Der Browser blockiert den automatischen Neustart. Bitte die Wiedergabe erneut starten.";
-        updatePlayButton();
-      } else if (!state.userPaused && stationAtStart === state.station) {
-        scheduleReconnect("Verbindung fehlgeschlagen");
-      }
+  state.songTimer = setTimeout(() => {
+    if (generation === state.stationGeneration && state.station) {
+      loadCurrentSong();
     }
-  }, RECONNECT_DELAY);
+  }, delay);
 }
 
 async function loadStationInfo(station) {
   const generation = state.stationGeneration;
+
   try {
-    const response = await fetch(API_BASE + encodeURIComponent(station), {
-      cache: "no-store"
-    });
-    if (!response.ok) throw new Error("Senderinformationen nicht verfügbar.");
+    const response = await fetch(
+      API_BASE + encodeURIComponent(station),
+      { cache: "no-store" }
+    );
+
+    if (!response.ok) {
+      throw new Error("Senderinformationen nicht verfügbar.");
+    }
 
     const data = await response.json();
-    if (station !== state.station || generation !== state.stationGeneration) return;
 
-    const officialName = data.display_name || displayStationName(station);
+    if (
+      station !== state.station ||
+      generation !== state.stationGeneration
+    ) {
+      return false;
+    }
+
+    /* Lplayer nutzt die von laut.fm gelieferte Stream-Adresse. */
+    if (typeof data.stream_url !== "string" || !data.stream_url.trim()) {
+      throw new Error("Die laut.fm-API hat keine Stream-Adresse geliefert.");
+    }
+
+    state.streamUrl = data.stream_url;
+
+    const officialName =
+      data.display_name || displayStationName(station);
+
     elements.stationTitle.textContent = officialName;
-    document.title = officialName + " | Webplayer";
-    state.stationLogo = (data.images && data.images.station)
-      ? data.images.station
-      : state.stationLogo;
+    document.title = officialName + " | Shout-FM Webplayer";
 
-    if (state.stationLogo) showCover(state.stationLogo);
+    state.stationLogo =
+      data.images && data.images.station
+        ? data.images.station
+        : API_BASE + encodeURIComponent(station) + "/images/logo";
+
+    showCover(state.stationLogo);
+    return true;
+
   } catch (error) {
-    console.warn("Senderinformationen konnten nicht geladen werden:", error);
+    if (
+      station === state.station &&
+      generation === state.stationGeneration
+    ) {
+      console.warn("Senderinformationen konnten nicht geladen werden:", error);
+      setStatus("SENDER NICHT VERFÜGBAR");
+      elements.message.textContent =
+        "Die Senderdaten konnten nicht geladen werden. Bitte erneut versuchen.";
+    }
+
+    return false;
   }
 }
 
 async function loadCurrentSong() {
   const station = state.station;
   const generation = state.stationGeneration;
+
   if (!station) return;
 
-  if (state.songRequest) state.songRequest.abort();
+  if (state.songRequest) {
+    state.songRequest.abort();
+  }
+
   const request = new AbortController();
   state.songRequest = request;
 
@@ -635,12 +762,21 @@ async function loadCurrentSong() {
       }
     );
 
-    if (!response.ok) throw new Error("Titelinformationen momentan nicht verfügbar.");
+    if (!response.ok) {
+      throw new Error("Titelinformationen momentan nicht verfügbar.");
+    }
 
     const data = await response.json();
-    if (station !== state.station || generation !== state.stationGeneration) return;
 
-    const artist = data.artist && data.artist.name ? data.artist.name : "";
+    if (
+      station !== state.station ||
+      generation !== state.stationGeneration
+    ) {
+      return;
+    }
+
+    const artist =
+      data.artist && data.artist.name ? data.artist.name : "";
     const title = data.title || "";
 
     elements.song.replaceChildren();
@@ -652,24 +788,39 @@ async function loadCurrentSong() {
     }
 
     const titleElement = document.createElement("span");
-    titleElement.textContent = title || "Kein aktueller Titel verfügbar.";
+    titleElement.textContent =
+      title || "Kein aktueller Titel verfügbar.";
     elements.song.appendChild(titleElement);
 
-    const coverUrl = data.type === "song" && data.artist
-      ? (data.artist.image || data.artist.thumb || "")
-      : "";
+    const coverUrl =
+      data.type === "song" && data.artist
+        ? (data.artist.image || data.artist.thumb || "")
+        : "";
 
     showCover(coverUrl || state.stationLogo);
+
+    /* Nächste Abfrage passend zum Ende des laufenden Titels. */
+    scheduleSongRefresh(data.ends_at);
+
   } catch (error) {
     if (error.name !== "AbortError") {
       console.warn("Aktueller Titel konnte nicht geladen werden:", error);
+
+      if (
+        station === state.station &&
+        generation === state.stationGeneration
+      ) {
+        scheduleSongRefresh(null);
+      }
     }
   } finally {
-    if (state.songRequest === request) state.songRequest = null;
+    if (state.songRequest === request) {
+      state.songRequest = null;
+    }
   }
 }
 
-function markPlaying() {   clearReconnect();   state.hasPlayedOnce = true;   state.reconnecting = false;   setStatus("LIVE ON AIR", true);   elements.message.textContent = "";   updatePlayButton(); }  async function openStation(rawName) {
+async function openStation(rawName) {
   const station = normalizeStation(rawName);
 
   if (!isValidStation(station)) {
@@ -679,83 +830,179 @@ function markPlaying() {   clearReconnect();   state.hasPlayedOnce = true;   sta
     return;
   }
 
-  // Derselbe bereits geöffnete Sender wird nicht erneut initialisiert.
-  if (station === state.station && !elements.playerScreen.hidden) return;
-
-  const stationChanged = station !== state.station;
-  if (stationChanged) {
-    state.stationGeneration += 1;
-    stopTimers();
-    state.hasPlayedOnce = false;
-    state.reconnecting = false;
- 
-    state.userPaused = false;
-    if (state.songRequest) {
-      state.songRequest.abort();
-      state.songRequest = null;
-    }
-
-    // Nur ein echter Senderwechsel darf die Audioquelle neu laden.
-    elements.audio.pause();
-    elements.audio.removeAttribute("src");
-    elements.audio.querySelectorAll("source").forEach(source => source.remove());
-    elements.audio.load();
-    state.stationLogo = "";
+  if (
+    station === state.station &&
+    !elements.playerScreen.hidden
+  ) {
+    return;
   }
 
+  state.stationGeneration += 1;
+  stopStationTasks();
+
+  /* Bei Senderwechsel die bisherige Wiedergabe sauber beenden. */
+  audio.pause();
+  audio.removeAttribute("src");
+  audio.load();
+
   state.station = station;
+  state.streamUrl = "";
+  state.stationLogo = "";
   state.userPaused = false;
-  state.stationLogo = API_BASE + encodeURIComponent(station) + "/images/logo";
-  showCover(state.stationLogo);
 
   elements.stationInput.value = station;
   elements.stationTitle.textContent = displayStationName(station);
-  elements.playButton.disabled = false;
+  elements.playButton.disabled = true;
   elements.song.textContent = "Lade aktuellen Titel …";
   elements.message.textContent = "";
   setStatus("SENDER WIRD GELADEN");
+  updatePlayButton();
+
+  showCover("");
 
   elements.entryScreen.hidden = true;
   elements.playerScreen.hidden = false;
-  if (elements.colorSettings) elements.colorSettings.hidden = true;
+
+  if (elements.colorSettings) {
+    elements.colorSettings.hidden = true;
+  }
 
   const pageUrl = new URL(window.location.href);
   pageUrl.searchParams.set("station", station);
   window.history.replaceState({}, "", pageUrl.toString());
 
-  if (stationChanged) {
-    /* Audio-Start direkt im Formular-Klick-Kontext */
-    setAudioSource(station);
-    const playAttempt = elements.audio.play();
-    if (playAttempt && typeof playAttempt.then === "function") {
-      const generation = state.stationGeneration;
-      playAttempt.then(() => {
-        if (generation === state.stationGeneration) markPlaying();
-      }).catch(() => {
-        if (generation !== state.stationGeneration) return;
-        setStatus("START ERFORDERLICH");
-        elements.message.textContent =
-          "Zum Starten bitte auf „Wiedergabe starten“ tippen.";
-        updatePlayButton();
-      });
-    }
+  /* Erst die Stations-API laden, damit die echte stream_url
+     verwendet werden kann. Audio startet anschließend bewusst
+     über den sichtbaren Button innerhalb einer Nutzeraktion. */
+  const loaded = await loadStationInfo(station);
+
+  if (
+    station !== state.station ||
+    !loaded
+  ) {
+    return;
   }
 
-  await Promise.all([
-    loadStationInfo(station),
-    loadCurrentSong()
-  ]);
+  elements.playButton.disabled = false;
+  setStatus("BEREIT ZUM STARTEN");
+  elements.message.textContent =
+    "Sender bereit. Wiedergabe zum Start bitte antippen.";
 
-  if (station !== state.station || state.songTimer !== null) return;
-  state.songTimer = setInterval(loadCurrentSong, 15000);
+  loadCurrentSong();
 }
 
-elements.form.addEventListener("submit", event => {   event.preventDefault();   openStation(elements.stationInput.value); });  elements.playButton.addEventListener("click", async () => {   if (!state.station) return;    if (!elements.audio.paused) {     state.userPaused = true;     clearReconnect();     elements.audio.pause();     setStatus("PAUSIERT");     elements.message.textContent = "Wiedergabe pausiert.";     updatePlayButton();     return;   }    state.userPaused = false;   clearReconnect();    try {     if (!elements.audio.querySelector("source")) {       setAudioSource(state.station);     }     await elements.audio.play();     markPlaying();   } catch (error) {     setStatus("START NICHT MÖGLICH");     elements.message.textContent =       "Wiedergabe nicht möglich. Bitte erneut versuchen.";     updatePlayButton();   } });  elements.audio.addEventListener("playing", markPlaying); elements.audio.addEventListener("play", updatePlayButton);  elements.audio.addEventListener("pause", () => {   updatePlayButton();   if (!state.userPaused && state.hasPlayedOnce && !state.reconnecting) {     scheduleReconnect("Wiedergabe wurde unerwartet unterbrochen");   } });  elements.audio.addEventListener("error", () => {   if (!state.userPaused) scheduleReconnect("Stream-Verbindung unterbrochen"); });  elements.audio.addEventListener("ended", () => {   if (!state.userPaused) scheduleReconnect("Stream wurde beendet"); });  elements.audio.addEventListener("stalled", () => {   if (!state.userPaused && state.hasPlayedOnce) {     scheduleReconnect("Stream liefert momentan keine Daten");   } });  /* =========================================================    FARBEN / WIDGET-EINSTELLUNGEN    ========================================================= */  function validHex(value) {   return /^#[0-9a-f]{6}$/i.test(String(value || "")); }  function colorFromUrl(key, fallback) {   const value = params.get(key);   return value && validHex("#" + value) ? "#" + value : fallback; }  const colorInputs = {
+/* Senderformular */
+elements.form.addEventListener("submit", event => {
+  event.preventDefault();
+  openStation(elements.stationInput.value);
+});
+
+/* Wiedergabe / Pause */
+elements.playButton.addEventListener("click", async () => {
+  if (!state.station || !state.streamUrl) return;
+
+  if (!audio.paused && !audio.ended) {
+    state.userPaused = true;
+    audio.pause();
+    setStatus("PAUSIERT");
+    elements.message.textContent = "Wiedergabe pausiert.";
+    updatePlayButton();
+    return;
+  }
+
+  state.userPaused = false;
+
+  try {
+    if (audio.src !== state.streamUrl) {
+      audio.src = state.streamUrl;
+      audio.load();
+    }
+
+    await audio.play();
+
+  } catch (error) {
+    console.warn("Wiedergabe konnte nicht gestartet werden:", error);
+
+    setStatus("START NICHT MÖGLICH");
+    elements.message.textContent =
+      error && error.name === "NotAllowedError"
+        ? "Der Browser benötigt eine direkte Startaktion. Bitte erneut auf Wiedergabe starten tippen."
+        : "Der Stream konnte nicht gestartet werden. Bitte erneut versuchen.";
+
+    updatePlayButton();
+  }
+});
+
+/* Audio-Ereignisse */
+audio.addEventListener("playing", () => {
+  setStatus("LIVE ON AIR", true);
+  elements.message.textContent = "";
+  updatePlayButton();
+});
+
+audio.addEventListener("play", updatePlayButton);
+
+audio.addEventListener("pause", () => {
+  updatePlayButton();
+
+  if (state.userPaused) {
+    setStatus("PAUSIERT");
+  }
+});
+
+audio.addEventListener("waiting", () => {
+  if (!state.userPaused) {
+    setStatus("PUFFERN");
+    elements.message.textContent =
+      "Der Stream wird geladen …";
+  }
+});
+
+audio.addEventListener("stalled", () => {
+  if (!state.userPaused) {
+    elements.message.textContent =
+      "Der Stream liefert momentan keine Audiodaten.";
+  }
+});
+
+audio.addEventListener("error", () => {
+  if (state.userPaused) return;
+
+  setStatus("STREAM-FEHLER");
+  elements.message.textContent =
+    "Die Stream-Verbindung ist fehlgeschlagen. Bitte erneut auf Wiedergabe starten tippen.";
+  updatePlayButton();
+});
+
+audio.addEventListener("ended", () => {
+  if (!state.userPaused) {
+    setStatus("STREAM BEENDET");
+    elements.message.textContent =
+      "Die Wiedergabe wurde beendet. Du kannst den Sender erneut starten.";
+  }
+  updatePlayButton();
+});
+
+/* =========================================================
+   FARBEN / WIDGET-EINSTELLUNGEN – unverändert übernommen
+   ========================================================= */
+
+function validHex(value) {
+  return /^#[0-9a-f]{6}$/i.test(String(value || ""));
+}
+
+function colorFromUrl(key, fallback) {
+  const value = params.get(key);
+  return value && validHex("#" + value) ? "#" + value : fallback;
+}
+
+const colorInputs = {
   accent: document.getElementById("accent-hex"),
   background: document.getElementById("bg-hex"),
   text: document.getElementById("text-hex"),
   transparent: document.getElementById("transparent-bg")
 };
+
 const playerCards = document.querySelectorAll(".player");
 const colorPresetButtons = document.querySelectorAll(".color-preset");
 let lastAppliedColorKey = "";
@@ -767,36 +1014,46 @@ function applyColors() {
   const textColor = colorInputs.text.value;
   const transparent = colorInputs.transparent.checked;
 
-  if (!validHex(accent) || !validHex(background) || !validHex(textColor)) return;
+  if (
+    !validHex(accent) ||
+    !validHex(background) ||
+    !validHex(textColor)
+  ) {
+    return;
+  }
 
-  // Farben in der URL speichern
-const pageUrl = new URL(window.location.href);
+  const pageUrl = new URL(window.location.href);
 
-if (
-  accent.toLowerCase() === "#4d7cfe" &&
-  background.toLowerCase() === "#121a2f" &&
-  textColor.toLowerCase() === "#f5f7fb" &&
-  !transparent
-) {
-  pageUrl.searchParams.delete("accent");
-  pageUrl.searchParams.delete("bg");
-  pageUrl.searchParams.delete("text");
-} else {
-  pageUrl.searchParams.set("accent", accent.slice(1));
-  pageUrl.searchParams.set("bg", background.slice(1));
-  pageUrl.searchParams.set("text", textColor.slice(1));
-}
+  if (
+    accent.toLowerCase() === "#4d7cfe" &&
+    background.toLowerCase() === "#121a2f" &&
+    textColor.toLowerCase() === "#f5f7fb" &&
+    !transparent
+  ) {
+    pageUrl.searchParams.delete("accent");
+    pageUrl.searchParams.delete("bg");
+    pageUrl.searchParams.delete("text");
+  } else {
+    pageUrl.searchParams.set("accent", accent.slice(1));
+    pageUrl.searchParams.set("bg", background.slice(1));
+    pageUrl.searchParams.set("text", textColor.slice(1));
+  }
 
-if (transparent) {
-  pageUrl.searchParams.set("transparent", "1");
-} else {
-  pageUrl.searchParams.delete("transparent");
-}
+  if (transparent) {
+    pageUrl.searchParams.set("transparent", "1");
+  } else {
+    pageUrl.searchParams.delete("transparent");
+  }
 
-window.history.replaceState({}, "", pageUrl.toString());
- 
- const colorKey = [accent.toLowerCase(), background.toLowerCase(),
-    textColor.toLowerCase(), transparent ? "1" : "0"].join("|");
+  window.history.replaceState({}, "", pageUrl.toString());
+
+  const colorKey = [
+    accent.toLowerCase(),
+    background.toLowerCase(),
+    textColor.toLowerCase(),
+    transparent ? "1" : "0"
+  ].join("|");
+
   if (colorKey === lastAppliedColorKey) return;
   lastAppliedColorKey = colorKey;
 
@@ -823,12 +1080,87 @@ window.history.replaceState({}, "", pageUrl.toString());
 
 function queueApplyColors() {
   if (colorApplyFrame !== null) return;
+
   colorApplyFrame = requestAnimationFrame(() => {
     colorApplyFrame = null;
     applyColors();
   });
 }
 
-function setupColorGenerator() {   const settings = [     ["accent", "#4d7cfe"],     ["bg", "#121a2f"],     ["text", "#f5f7fb"]   ];    settings.forEach(([key, fallback]) => {     const initial = colorFromUrl(key, fallback);     const picker = document.getElementById(key + "-picker");     const hex = document.getElementById(key + "-hex");      picker.value = initial;     hex.value = initial;      picker.addEventListener("input", () => {       hex.value = picker.value;       queueApplyColors();     });      hex.addEventListener("input", () => {       if (validHex(hex.value)) {         picker.value = hex.value;         queueApplyColors();       }     });      hex.addEventListener("change", () => {       if (!validHex(hex.value)) hex.value = fallback;       picker.value = hex.value;       queueApplyColors();     });   });    colorPresetButtons.forEach(button => {     button.addEventListener("click", () => {       const color = button.dataset.color;       document.getElementById("accent-picker").value = color;       document.getElementById("accent-hex").value = color;        colorPresetButtons.forEach(item => {         item.setAttribute("aria-pressed", String(item === button));       });        queueApplyColors();     });   });    const transparent = document.getElementById("transparent-bg");   transparent.checked = params.get("transparent") === "1";   transparent.addEventListener("change", queueApplyColors);   queueApplyColors(); }  setupColorGenerator();  /* Direkter Aufruf eines Senders über ?station=stationsname    Beim Neuladen wie im ursprünglichen Player erst nach window.load starten. */ const initialStation = params.get("station"); if (initialStation) {   elements.stationInput.value = initialStation;   if (elements.colorSettings) elements.colorSettings.hidden = true;    window.addEventListener("load", () => {     openStation(initialStation);   }, { once: true }); }  </script>
+function setupColorGenerator() {
+  const settings = [
+    ["accent", "#4d7cfe"],
+    ["bg", "#121a2f"],
+    ["text", "#f5f7fb"]
+  ];
+
+  settings.forEach(([key, fallback]) => {
+    const initial = colorFromUrl(key, fallback);
+    const picker = document.getElementById(key + "-picker");
+    const hex = document.getElementById(key + "-hex");
+
+    picker.value = initial;
+    hex.value = initial;
+
+    picker.addEventListener("input", () => {
+      hex.value = picker.value;
+      queueApplyColors();
+    });
+
+    hex.addEventListener("input", () => {
+      if (validHex(hex.value)) {
+        picker.value = hex.value;
+        queueApplyColors();
+      }
+    });
+
+    hex.addEventListener("change", () => {
+      if (!validHex(hex.value)) hex.value = fallback;
+      picker.value = hex.value;
+      queueApplyColors();
+    });
+  });
+
+  colorPresetButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      const color = button.dataset.color;
+      document.getElementById("accent-picker").value = color;
+      document.getElementById("accent-hex").value = color;
+
+      colorPresetButtons.forEach(item => {
+        item.setAttribute(
+          "aria-pressed",
+          String(item === button)
+        );
+      });
+
+      queueApplyColors();
+    });
+  });
+
+  const transparent = document.getElementById("transparent-bg");
+  transparent.checked = params.get("transparent") === "1";
+  transparent.addEventListener("change", queueApplyColors);
+
+  queueApplyColors();
+}
+
+setupColorGenerator();
+
+/* Direkter Senderaufruf über ?station=stationsname */
+const initialStation = params.get("station");
+
+if (initialStation) {
+  elements.stationInput.value = initialStation;
+
+  if (elements.colorSettings) {
+    elements.colorSettings.hidden = true;
+  }
+
+  window.addEventListener("load", () => {
+    openStation(initialStation);
+  }, { once: true });
+}
+  </script>
  </body>
 </html>
