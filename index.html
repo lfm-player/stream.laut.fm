@@ -294,17 +294,30 @@
         // Ausgewählte Farben in der URL sichern, damit sie Reloads überstehen
         // und beim Teilen des Player-Links erhalten bleiben.
         const url = new URL(window.location.href);
-        url.searchParams.set("accent", accent.slice(1));
-        url.searchParams.set("bg", background.slice(1));
-        url.searchParams.set("text", textColor.slice(1));
-        if (transparent) url.searchParams.set("transparent", "1");
-        else url.searchParams.delete("transparent");
+        const colorValues = [
+          ["accent", accent, "#4d7cfe"],
+          ["bg", background, "#121a2f"],
+          ["text", textColor, "#f5f7fb"]
+        ];
 
-        params.set("accent", accent.slice(1));
-        params.set("bg", background.slice(1));
-        params.set("text", textColor.slice(1));
-        if (transparent) params.set("transparent", "1");
-        else params.delete("transparent");
+        // Standardfarben nicht in den Link schreiben; nur Abweichungen teilen.
+        colorValues.forEach(([key, value, defaultValue]) => {
+          if (value.toLowerCase() === defaultValue) {
+            url.searchParams.delete(key);
+            params.delete(key);
+          } else {
+            url.searchParams.set(key, value.slice(1));
+            params.set(key, value.slice(1));
+          }
+        });
+
+        if (transparent) {
+          url.searchParams.set("transparent", "1");
+          params.set("transparent", "1");
+        } else {
+          url.searchParams.delete("transparent");
+          params.delete("transparent");
+        }
 
         window.history.replaceState({}, "", url.toString());
       }
