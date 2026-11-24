@@ -608,14 +608,37 @@ function setStatus(label, live = false) {
   elements.status.classList.toggle("live", live);
 }
 
-function setTabIcon(url) {
-  const icon = document.getElementById("appIcon");
-  if (!icon) return;
+let tabIconRequest = 0;
 
-  const nextUrl = url || "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cpath fill=%22%234d7cfe%22 d=%22M18 9v46l38-23z%22/%3E%3C/svg%3E";
-  if (icon.getAttribute("href") !== nextUrl) {
-    icon.setAttribute("href", nextUrl);
+function setTabIcon(url) {
+  const request = ++tabIconRequest;
+  const currentIcon = document.getElementById("appIcon");
+  if (!currentIcon) return;
+
+  const defaultIcon = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cpath fill=%22%234d7cfe%22 d=%22M18 9v46l38-23z%22/%3E%3C/svg%3E";
+
+  if (!url) {
+    currentIcon.href = defaultIcon;
+    return;
   }
+
+  /* Logo zuerst vollständig laden; mobile Browser übernehmen dynamische Favicons
+     zuverlässiger, wenn anschließend ein neues Icon-Link-Element eingesetzt wird. */
+  const preload = new Image();
+  preload.onload = () => {
+    if (request !== tabIconRequest) return;
+
+    const nextIcon = document.createElement("link");
+    nextIcon.rel = "icon";
+    nextIcon.id = "appIcon";
+    nextIcon.href = url;
+    nextIcon.sizes = "any";
+    currentIcon.replaceWith(nextIcon);
+  };
+  preload.onerror = () => {
+    /* Bei nicht verfügbarem Stationslogo bleibt das Play-Symbol erhalten. */
+  };
+  preload.src = url;
 }
 
 function updatePlayButton() {
