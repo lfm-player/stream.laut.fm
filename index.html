@@ -658,13 +658,20 @@
       progressWatchdog = null;
     }
 
-    // Alte Stream-Quelle vollständig lösen und frisch initialisieren.
-    // Damit verwirft der Browser den bisherigen Medienpuffer bestmöglich.
+    // Alte Stream-Quelle lösen und eine neue Medienanforderung erzwingen.
+    // Der Cache-Buster verhindert, dass ein zwischengeschalteter Cache eine
+    // vorherige Stream-Antwort wiederverwendet. Den gespeicherten streamUrl
+    // selbst verändern wir nicht.
     function resetAudioBufferAndLoadStream() {
+      if (!streamUrl) throw new Error("Keine Stream-URL verfügbar");
+
       audio.pause();
       audio.removeAttribute("src");
       audio.load();
-      audio.src = streamUrl;
+
+      const freshStreamUrl = new URL(streamUrl);
+      freshStreamUrl.searchParams.set("_player_reload", String(Date.now()));
+      audio.src = freshStreamUrl.toString();
       audio.load();
     }
 
