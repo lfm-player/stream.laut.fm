@@ -466,7 +466,7 @@
         navigator.mediaSession.metadata = new MediaMetadata({
           title: currentSong || stationInfo.display_name || currentStation,
           artist: currentArtist || stationInfo.display_name || currentStation,
-          album: stationInfo.display_name || currentStation,
+          ...(currentAlbum ? { album: currentAlbum } : {}),
           artwork: artwork && artwork.length ? artwork : preferredFallbackArtwork()
         });
       } catch (error) {
