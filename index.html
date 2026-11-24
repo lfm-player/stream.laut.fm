@@ -291,6 +291,22 @@
           ? "transparent"
           : "";
 
+        // Ausgewählte Farben in der URL sichern, damit sie Reloads überstehen
+        // und beim Teilen des Player-Links erhalten bleiben.
+        const url = new URL(window.location.href);
+        url.searchParams.set("accent", accent.slice(1));
+        url.searchParams.set("bg", background.slice(1));
+        url.searchParams.set("text", textColor.slice(1));
+        if (transparent) url.searchParams.set("transparent", "1");
+        else url.searchParams.delete("transparent");
+
+        params.set("accent", accent.slice(1));
+        params.set("bg", background.slice(1));
+        params.set("text", textColor.slice(1));
+        if (transparent) params.set("transparent", "1");
+        else params.delete("transparent");
+
+        window.history.replaceState({}, "", url.toString());
       }
 
       pairs.forEach(([key, fallback]) => {
@@ -317,7 +333,9 @@
         });
       });
 
+      const initialAccent = getColor("accent", "#4d7cfe").toLowerCase();
       document.querySelectorAll(".color-preset").forEach(button => {
+        button.setAttribute("aria-pressed", String(button.dataset.color.toLowerCase() === initialAccent));
         button.addEventListener("click", () => {
           const color = button.dataset.color;
           document.getElementById("accent-picker").value = color;
