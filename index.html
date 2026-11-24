@@ -8,7 +8,7 @@
   <title>
    Webplayer
   </title>
-  <link href="favicon.ico" rel="icon" type="image/x-icon"/>
+  <link href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cpath fill=%22%234d7cfe%22 d=%22M18 9v46l38-23z%22/%3E%3C/svg%3E" rel="icon" id="appIcon"/>
   <!-- Hintergrund sofort beim Laden festlegen -->
   <style>
 html, body {
@@ -608,6 +608,16 @@ function setStatus(label, live = false) {
   elements.status.classList.toggle("live", live);
 }
 
+function setTabIcon(url) {
+  const icon = document.getElementById("appIcon");
+  if (!icon) return;
+
+  const nextUrl = url || "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cpath fill=%22%234d7cfe%22 d=%22M18 9v46l38-23z%22/%3E%3C/svg%3E";
+  if (icon.getAttribute("href") !== nextUrl) {
+    icon.setAttribute("href", nextUrl);
+  }
+}
+
 function updatePlayButton() {
   const playing = !audio.paused && !audio.ended;
   elements.playButton.textContent = playing
@@ -777,6 +787,7 @@ async function loadStationInfo(station) {
         ? data.images.station
         : API_BASE + encodeURIComponent(station) + "/images/logo";
 
+    setTabIcon(state.stationLogo);
     showCover(state.stationLogo);
 
     /* Stationsdaten und Stream-Adresse regelmäßig aktualisieren. */
@@ -916,6 +927,7 @@ async function openStation(rawName) {
   state.streamUrl = "";
   state.stationLogo = "";
   state.userPaused = false;
+  setTabIcon();
 
   elements.stationInput.value = station;
   elements.stationTitle.textContent = displayStationName(station);
