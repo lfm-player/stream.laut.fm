@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <meta content="#0b1120" name="theme-color"/>
-  <meta content="Universeller laut.fm Webplayer V4" name="description"/>
+  <meta content="Universeller laut.fm Webplayer" name="description"/>
   <title>
    Webplayer
   </title>
@@ -552,9 +552,9 @@ html, body {
 "use strict";
 
 /* =========================================================
-   SHOUT-FM UNIVERSAL LAUT.FM PLAYER V4
+   UNIVERSAL LAUT.FM WEBPLAYER V4.1
    Native Audio() + laut.fm Stations-API
-   Titelaktualisierung anhand von ends_at
+   Zeitzonenfeste ends_at-Auswertung, Stations-Refresh und API-Retry
    ========================================================= */
 
 const API_BASE = "https://api.laut.fm/station/";
@@ -586,6 +586,7 @@ const state = {
   stationLogo: "",
   userPaused: false,
   songTimer: null,
+  stationInfoTimer: null,
   songRequest: null,
   stationGeneration: 0
 };
@@ -647,13 +648,50 @@ function clearSongTimer() {
   }
 }
 
+function clearStationInfoTimer() {
+  if (state.stationInfoTimer !== null) {
+    clearTimeout(state.stationInfoTimer);
+    state.stationInfoTimer = null;
+  }
+}
+
 function stopStationTasks() {
   clearSongTimer();
+  clearStationInfoTimer();
 
   if (state.songRequest) {
     state.songRequest.abort();
     state.songRequest = null;
   }
+}
+
+/* laut.fm liefert ends_at teils als lokale Uhrzeit mit UTC-Offset,
+   z. B. "2026-11-23 22:30:00 +01". Nicht als Browser-Lokalzeit
+   interpretieren, sondern den angegebenen Offset berücksichtigen. */
+function parseLautFmEndTime(value) {
+  if (typeof value !== "string" || !value.trim()) return NaN;
+
+  const match = value.trim().match(
+    /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})\s*([+-])(\d{2})(?::?(\d{2}))?/
+  );
+
+  if (match) {
+    const [, year, month, day, hour, minute, second, sign, offsetHour, offsetMinute = "0"] = match;
+    const offset = (Number(offsetHour) * 60 + Number(offsetMinute)) *
+      (sign === "+" ? 1 : -1);
+
+    return Date.UTC(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second)
+    ) - offset * 60000;
+  }
+
+  /* ISO-8601 mit Z oder numerischem Offset wird nativ korrekt geparst. */
+  return Date.parse(value);
 }
 
 function scheduleSongRefresh(endsAt) {
@@ -662,7 +700,7 @@ function scheduleSongRefresh(endsAt) {
   let delay = 10000;
 
   if (endsAt) {
-    const endTime = new Date(endsAt).getTime();
+    const endTime = parseLautFmEndTime(endsAt);
 
     if (Number.isFinite(endTime)) {
       delay = endTime - Date.now() + 300;
@@ -678,6 +716,18 @@ function scheduleSongRefresh(endsAt) {
   state.songTimer = setTimeout(() => {
     if (generation === state.stationGeneration && state.station) {
       loadCurrentSong();
+    }
+  }, delay);
+}
+
+function scheduleStationInfoRefresh(delay = 300000) {
+  clearStationInfoTimer();
+
+  const generation = state.stationGeneration;
+
+  state.stationInfoTimer = setTimeout(() => {
+    if (generation === state.stationGeneration && state.station) {
+      loadStationInfo(state.station);
     }
   }, delay);
 }
@@ -723,6 +773,17 @@ async function loadStationInfo(station) {
         : API_BASE + encodeURIComponent(station) + "/images/logo";
 
     showCover(state.stationLogo);
+
+    /* Stationsdaten und Stream-Adresse regelmäßig aktualisieren. */
+    scheduleStationInfoRefresh(300000);
+
+    if (elements.playButton.disabled) {
+      elements.playButton.disabled = false;
+      setStatus("BEREIT ZUM STARTEN");
+      elements.message.textContent =
+        "Sender bereit. Wiedergabe zum Start bitte antippen.";
+    }
+
     return true;
 
   } catch (error) {
@@ -733,7 +794,8 @@ async function loadStationInfo(station) {
       console.warn("Senderinformationen konnten nicht geladen werden:", error);
       setStatus("SENDER NICHT VERFÜGBAR");
       elements.message.textContent =
-        "Die Senderdaten konnten nicht geladen werden. Bitte erneut versuchen.";
+        "Die Senderdaten konnten nicht geladen werden. Neuer Versuch in 10 Sekunden.";
+      scheduleStationInfoRefresh(10000);
     }
 
     return false;
