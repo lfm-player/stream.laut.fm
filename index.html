@@ -624,6 +624,11 @@ function showCover(url) {
     return;
   }
 
+  const currentImage = elements.cover.querySelector("img");
+  if (currentImage && currentImage.getAttribute("src") === imageUrl) {
+    return;
+  }
+
   const image = document.createElement("img");
   image.alt = "";
   image.src = imageUrl;
