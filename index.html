@@ -1020,13 +1020,6 @@ audio.addEventListener("waiting", () => {
   }
 });
 
-audio.addEventListener("stalled", () => {
-  if (!state.userPaused) {
-    elements.message.textContent =
-      "Der Stream liefert momentan keine Audiodaten.";
-  }
-});
-
 audio.addEventListener("error", () => {
   if (state.userPaused) return;
 
