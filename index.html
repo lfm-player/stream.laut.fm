@@ -658,6 +658,16 @@
       progressWatchdog = null;
     }
 
+    // Alte Stream-Quelle vollständig lösen und frisch initialisieren.
+    // Damit verwirft der Browser den bisherigen Medienpuffer bestmöglich.
+    function resetAudioBufferAndLoadStream() {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+      audio.src = streamUrl;
+      audio.load();
+    }
+
     function startProgressWatchdog() {
       stopProgressWatchdog();
       lastAudioTime = audio.currentTime || 0;
@@ -692,9 +702,7 @@
         reconnectTimer = null;
         if (userPaused || !streamUrl) return;
         try {
-          audio.pause();
-          audio.src = streamUrl;
-          audio.load();
+          resetAudioBufferAndLoadStream();
           await audio.play();
           messageElement.textContent = "";
         } catch (error) {
@@ -704,7 +712,7 @@
       }, delay);
     }
 
-    async function startPlayback() {
+    async function startPlayback(isAutoStart = false) {
       if (!streamUrl) {
         messageElement.textContent = "Der Stream ist noch nicht bereit. Bitte kurz warten.";
         return;
@@ -713,9 +721,8 @@
       clearReconnectTimer();
       reconnectAttempt = 0;
       try {
-        // Entspricht dem normalen LPlayer-Modus: Stream erst nach Nutzeraktion starten.
-        audio.src = " ";
-        audio.src = streamUrl;
+        // Stream erst nach Nutzeraktion starten und eine frische Audioquelle laden.
+        resetAudioBufferAndLoadStream();
         await audio.play();
         playbackStarted = true;
         setStatus("LIVE ON AIR", true);
@@ -723,8 +730,13 @@
         if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
       } catch (error) {
         userPaused = true;
-        setStatus("START NICHT MÖGLICH");
-        messageElement.textContent = "Wiedergabe nicht möglich. Bitte erneut versuchen.";
+        if (isAutoStart && error && (error.name === "NotAllowedError" || error.name === "AbortError")) {
+          setStatus("BEREIT ZUM STARTEN");
+          messageElement.textContent = "Der Browser blockiert den automatischen Start. Bitte einmal auf Wiedergabe starten klicken.";
+        } else {
+          setStatus("START NICHT MÖGLICH");
+          messageElement.textContent = "Wiedergabe nicht möglich. Bitte erneut versuchen.";
+        }
         if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
       }
       updatePlayButton();
@@ -742,7 +754,7 @@
       updatePlayButton();
     }
 
-    async function openStation(rawName) {
+    async function openStation(rawName, autoStart = false) {
       const station = normalizeStation(rawName);
       if (!validStation(station)) {
         entryMessage.textContent = "Bitte einen gültigen laut.fm-Stationsnamen eingeben.";
@@ -801,6 +813,7 @@
       if (streamUrl) {
         playButton.disabled = false;
         playButton.textContent = "▶ Wiedergabe starten";
+        if (autoStart) await startPlayback(true);
       }
       if (stationTimer !== null) clearInterval(stationTimer);
       stationTimer = setInterval(loadStationInfo, 300000);
@@ -844,7 +857,7 @@
     if (initialStation) {
       stationInput.value = initialStation;
       if (colorSettings) colorSettings.hidden = true;
-      openStation(initialStation);
+      openStation(initialStation, true);
     } else {
       stationInput.value = "";
     }
