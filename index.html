@@ -136,6 +136,36 @@
     .entry-button { margin-top: 16px; }
     .station-form input { width: 100%; display: block; }
     .station-form label { margin-top: 2px; }
+    .image-options {
+      margin: 14px 0 16px;
+      padding: 11px 12px 9px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    .image-options legend {
+      padding: 0 5px;
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 700;
+    }
+    .image-options label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 7px 0;
+      color: var(--text);
+      font-size: .78rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .station-form .image-options input[type="radio"] {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      flex: 0 0 auto;
+      accent-color: var(--accent);
+    }
     .status { margin-top: 0; }
     .change-station {
       margin-top: 16px; padding: 7px 10px; border: 0; background: transparent;
@@ -167,9 +197,14 @@
         <input id="station-input" name="station" type="text"
                placeholder="z. B. eins" maxlength="80"
                pattern="[A-Za-z0-9_-]+" autocomplete="off" spellcheck="false">
+        <fieldset class="image-options">
+          <legend>Cover-Anzeige</legend>
+          <label><input type="radio" name="image-mode" value="logo"> Nur Senderlogo</label>
+          <label><input type="radio" name="image-mode" value="artist" checked> Künstlerbilder und Senderlogo</label>
+        </fieldset>
         <button class="play-button entry-button" type="submit">Sender öffnen</button>
       </form>
-      <p class="message" id="entry-message" role="status" aria-live="polite">Beispiel: shout_fm</p>
+      <p class="message" id="entry-message" role="status" aria-live="polite">Beispiel: eins</p>
     </section>
 
     <section class="generator" id="color-settings" aria-label="Player-Farbeinstellungen">
@@ -204,7 +239,7 @@
     </section>
 
     <section class="player" id="player-screen" aria-label="laut.fm Webplayer" hidden>
-      <h1 class="brand" id="station-title">Shout-FM</h1>
+      <h1 class="brand" id="station-title">laut.fm PLAYER</h1>
       <div class="status live" id="status">LIVE ON AIR</div>
       <div class="cover" id="cover">Lade Cover …</div>
       <div class="song" id="song">Lade aktuellen Titel …</div>
@@ -388,7 +423,32 @@
     let currentArtist = "";
     let currentArtistImage = "";
     let currentArtistThumb = "";
-    let currentAlbum = "";
+
+    // Standard: Künstlerbilder und Senderlogo. Nur die abweichende
+    // Einstellung "Nur Senderlogo" wird als URL-Parameter geteilt.
+    let imageMode = params.get("images") === "logo" ? "logo" : "artist";
+    document.querySelectorAll('input[name="image-mode"]').forEach(input => {
+      input.checked = input.value === imageMode;
+      input.addEventListener("change", () => {
+        if (!input.checked) return;
+        imageMode = input.value;
+
+        const url = new URL(window.location.href);
+        if (imageMode === "artist") {
+          url.searchParams.delete("images");
+          params.delete("images");
+        } else {
+          url.searchParams.set("images", "logo");
+          params.set("images", "logo");
+        }
+        window.history.replaceState({}, "", url.toString());
+
+        const requestId = ++coverRequestId;
+        if (imageMode === "logo") showStationLogo(requestId);
+        else showArtistOrStation(requestId);
+        updateMediaMetadata(preferredFallbackArtwork());
+      });
+    });
     let currentLive = false;
     let songTimer = null;
     let stationTimer = null;
@@ -456,8 +516,10 @@
     }
 
     function preferredFallbackArtwork() {
-      // Media Session bekommt Künstlerbild zuerst und das Senderlogo als sicheren Rückfall.
-      return [...artistArtwork(), ...stationArtwork()];
+      // Die Auswahl gilt auch für Media Session und kompatible Bluetooth-Geräte.
+      return imageMode === "logo"
+        ? stationArtwork()
+        : [...artistArtwork(), ...stationArtwork()];
     }
 
     function updateMediaMetadata(artwork) {
@@ -466,7 +528,7 @@
         navigator.mediaSession.metadata = new MediaMetadata({
           title: currentSong || stationInfo.display_name || currentStation,
           artist: currentArtist || stationInfo.display_name || currentStation,
-          ...(currentAlbum ? { album: currentAlbum } : {}),
+
           artwork: artwork && artwork.length ? artwork : preferredFallbackArtwork()
         });
       } catch (error) {
@@ -497,7 +559,7 @@
     function showCover(url, requestId = coverRequestId, fallbackToArtist = false) {
       if (!url) return showStationLogo(requestId);
       const image = new Image();
-      image.alt = "Albumcover oder Senderlogo";
+      image.alt = "Künstlerbild oder Senderlogo";
       image.onload = () => {
         if (requestId !== coverRequestId) return;
         coverElement.replaceChildren(image);
@@ -517,6 +579,7 @@
 
     function showArtistOrStation(requestId = coverRequestId) {
       if (requestId !== coverRequestId) return;
+      if (imageMode === "logo") return showStationLogo(requestId);
       if (currentArtistImage) return showCover(currentArtistImage, requestId, false);
       if (currentArtistThumb) return showCover(currentArtistThumb, requestId, false);
       showStationLogo(requestId);
@@ -531,14 +594,14 @@
       showCover(stationLogo, requestId);
     }
 
-    function updateSongInfo(title, artist, album = "", artistImage = "", artistThumb = "") {
+    function updateSongInfo(title, artist, artistImage = "", artistThumb = "") {
       const changed = currentSong !== title || currentArtist !== artist ||
         currentArtistImage !== (artistImage || "") || currentArtistThumb !== (artistThumb || "");
       currentSong = title || "";
       currentArtist = artist || "";
       currentArtistImage = artistImage || "";
       currentArtistThumb = artistThumb || "";
-      currentAlbum = album || "";
+      
 
       songElement.replaceChildren();
       if (currentArtist) {
@@ -596,7 +659,7 @@
         if (generationAtRequest !== stationGeneration || stationAtRequest !== currentStation) return;
         if (!data || !data.title) throw new Error("Keine aktuellen Titelinformationen verfügbar");
         currentLive = !!data.live;
-        updateSongInfo(data.title, data.artist && data.artist.name ? data.artist.name : "", data.album || "", data.artist && data.artist.image ? data.artist.image : "", data.artist && data.artist.thumb ? data.artist.thumb : "");
+        updateSongInfo(data.title, data.artist && data.artist.name ? data.artist.name : "", data.artist && data.artist.image ? data.artist.image : "", data.artist && data.artist.thumb ? data.artist.thumb : "");
         if (!playbackStarted) setStatus("BEREIT ZUM STARTEN");
         else if (!userPaused) setStatus(currentLive ? "LIVE ON AIR" : "ON AIR", true);
         messageElement.textContent = "";
@@ -637,7 +700,7 @@
         document.title = officialName + " | Webplayer";
         if (!currentSong) showStationLogo();
         initMediaSession();
-        updateMediaMetadata(stationArtwork());
+        updateMediaMetadata(preferredFallbackArtwork());
         loadCurrentSong();
       } catch (error) {
         console.warn("Stationsinformationen konnten nicht geladen werden:", error);
@@ -786,7 +849,7 @@
         currentArtist = "";
         currentArtistImage = "";
         currentArtistThumb = "";
-        currentAlbum = "";
+
         stationInfo = null;
         streamUrl = "";
         stationLogo = "";
