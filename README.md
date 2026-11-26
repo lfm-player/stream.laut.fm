@@ -1,4 +1,4 @@
-# 🎧 Universal laut.fm Webplayer V5
+# 🎧 Universal laut.fm Webplayer V5.1
 
 Ein moderner, responsiver und universeller Webplayer für Radiosender der Plattform **laut.fm**.
 
