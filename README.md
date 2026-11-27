@@ -43,7 +43,7 @@ Mit diesem Player kann jeder beliebige laut.fm-Sender direkt im Browser abgespie
 - **Media Session API:** Integration in die Mediensteuerung des Browsers und Betriebssystems.
 - **Bluetooth-Steuerung:** Unterstützung der Wiedergabe- und Pausensteuerung über kompatible Bluetooth-Geräte.
 - **Titelinformationen:** Übermittlung von Interpret und Songtitel an die Mediensteuerung.
-- **Albuminformationen:** Werden nur übertragen, wenn entsprechende Daten vorhanden sind.
+- **Albuminformationen:** Werden nicht separat übertragen. Falls eine Albumangabe benötigt wird, wird stattdessen der Sendername angezeigt.
 - **Coveranzeige:** Künstlerbild beziehungsweise Senderlogo als Ersatzbild.
 - **Mediensteuerung:** Unterstützung der verfügbaren Play-, Pause- und Stop-Aktionen.
 
