@@ -122,7 +122,7 @@
     .volume-slider::-webkit-slider-thumb { width:9px; height:9px; appearance:none; -webkit-appearance:none; border:0; border-radius:50%; background:var(--accent-light); box-shadow:0 0 0 1px rgba(8,13,24,.25); }
     .volume-slider::-moz-range-thumb { width:9px; height:9px; border:0; border-radius:50%; background:var(--accent-light); box-shadow:0 0 0 1px rgba(8,13,24,.25); }
     .volume-slider:focus-visible { outline:2px solid var(--accent-light); outline-offset:5px; }
-    @media (max-width: 767px) {
+    @media (hover: none) and (pointer: coarse) {
       .volume-control { display:none; }
     }
     .message { min-height: 20px; margin: 14px 0 0; color: var(--muted); font-size: .78rem; line-height: 1.4; }
@@ -493,7 +493,7 @@
     const colorSettings = document.getElementById("color-settings");
 
     // Desktop: 75 %; Smartphones: 100 %. Bleibt bei Senderwechsel und Reconnect erhalten.
-    const isSmartphone = window.matchMedia("(max-width: 767px)").matches;
+    const isSmartphone = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
     const initialVolume = isSmartphone ? 100 : 75;
     audio.volume = initialVolume / 100;
     volumeSlider.value = String(initialVolume);
