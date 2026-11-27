@@ -977,7 +977,7 @@
         userPaused = true;
         if (isAutoStart && error && (error.name === "NotAllowedError" || error.name === "AbortError")) {
           setStatus("BEREIT ZUM STARTEN");
-          messageElement.textContent = "Der Browser blockiert den automatischen Start. Bitte einmal auf Wiedergabe starten klicken.";
+          messageElement.textContent = "";
         } else {
           setStatus("START NICHT MÖGLICH");
           messageElement.textContent = "Wiedergabe nicht möglich. Bitte erneut versuchen.";
