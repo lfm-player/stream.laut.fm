@@ -293,7 +293,6 @@
         <p class="generator-note">Die Farben werden direkt auf diesen eigenständigen Player angewendet.</p>
         <p class="generator-note">Stream, Senderinformationen und Cover werden von laut.fm bereitgestellt.</p>
       </section>
-    </section>
 
     <section class="player" id="player-screen" aria-label="laut.fm Webplayer" hidden>
       <h1 class="brand" id="station-title">laut.fm PLAYER</h1>
@@ -866,6 +865,8 @@
         stationInfo = data;
         updateStationWebsite();
         streamUrl = data.stream_url;
+        playButton.disabled = false;
+        if (!playbackStarted && userPaused) setStatus("BEREIT ZUM STARTEN");
         stationLogo = data.images && (data.images.station_80x80 || data.images.station_120x120 || data.images.station_640x640 || data.images.station)
           ? (data.images.station_640x640 || data.images.station_120x120 || data.images.station_80x80 || data.images.station)
           : "";
@@ -1080,6 +1081,7 @@
     audio.addEventListener("pause", updatePlayButton);
     audio.addEventListener("playing", () => {
       clearReconnectTimer();
+      reconnectAttempt = 0;
       startProgressWatchdog();
       setStatus("LIVE ON AIR", true);
       if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
